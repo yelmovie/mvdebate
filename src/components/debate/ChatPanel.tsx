@@ -361,26 +361,11 @@ export default function ChatPanel() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onFocus={(e) => {
-                    // Mobile: Scroll into view and add padding
+                    // Mobile: Scroll into view when focused
                     if (window.innerWidth <= 640) {
                       setTimeout(() => {
                         e.target.scrollIntoView({ behavior: "smooth", block: "center" });
                       }, 300);
-                      // Add padding to chat messages container to push content up
-                      const messagesContainer = document.querySelector('.chat-messages') as HTMLElement;
-                      if (messagesContainer) {
-                        messagesContainer.style.paddingBottom = '250px';
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                      }
-                    }
-                  }}
-                  onBlur={() => {
-                    // Reset padding
-                    if (window.innerWidth <= 640) {
-                      const messagesContainer = document.querySelector('.chat-messages') as HTMLElement;
-                      if (messagesContainer) {
-                        messagesContainer.style.paddingBottom = '20px'; // Reset to original
-                      }
                     }
                   }}
                   placeholder={UI_TEXT.INPUT_PLACEHOLDER}
