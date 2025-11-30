@@ -176,12 +176,12 @@ function DebateContent() {
 
 
 
-          <p>이제 토론 준비를 시작해 볼까요?</p>
+          <p style={{ marginBottom: "16px" }}>이제 토론 준비를 시작해 볼까요?</p>
           <button
             className="btn btn-primary"
             onClick={handleCreateSession}
             disabled={isLoading || !selectedPersonaId}
-            style={{ width: "100%" }}
+            style={{ width: "100%", marginTop: "12px", padding: "16px" }}
           >
             세션 만들기
           </button>

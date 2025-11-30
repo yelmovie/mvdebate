@@ -22,15 +22,17 @@
 /* --- Grid Layout (Responsive) --- */
 .persona-selector__grid {
   display: grid;
-  gap: 10px;
+  gap: 20px; /* Increased gap for better spacing */
   /* Mobile First: 2 columns */
   grid-template-columns: repeat(2, 1fr);
+  padding-bottom: 20px; /* Extra space for hover effects */
 }
 
 /* Tablet: 3 columns */
 @media (min-width: 641px) {
   .persona-selector__grid {
     grid-template-columns: repeat(3, 1fr);
+    gap: 24px; /* Larger gap on tablet */
   }
 }
 
@@ -55,12 +57,16 @@
   align-items: center;
   gap: 6px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 100%; /* Ensure uniform height */
+  z-index: 1;
 }
 
 .persona-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   background: var(--ms-card-hover);
+  z-index: 10; /* Bring to front on hover */
+  overflow: visible; /* Ensure content isn't clipped */
 }
 
 .persona-card--selected {
@@ -68,6 +74,7 @@
   background: rgba(var(--ms-primary-rgb), 0.1);
   transform: scale(1.03);
   box-shadow: 0 0 0 2px rgba(var(--ms-primary-rgb), 0.3);
+  z-index: 5;
 }
 
 .persona-card__image-wrapper {
@@ -93,6 +100,15 @@
   color: var(--ms-text);
   text-align: center;
   line-height: 1.2;
+  white-space: nowrap; /* Prevent wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.persona-card:hover .persona-card__name {
+  white-space: normal; /* Allow wrapping on hover */
+  overflow: visible;
 }
 
 .persona-card__role {
