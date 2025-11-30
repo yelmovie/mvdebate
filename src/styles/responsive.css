@@ -87,16 +87,17 @@
 
   /* --- Fix 2: Chat Panel & Input Visibility (Sticky Footer) --- */
   .chat-panel {
-    height: calc(100dvh - 140px) !important; /* Adjust based on header/banner */
+    height: 100dvh !important; /* Use dynamic viewport height */
+    min-height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    overflow: hidden !important; /* Container doesn't scroll, children do */
+    overflow: hidden !important;
     position: relative !important;
   }
 
   .chat-messages {
     flex: 1 !important;
-    overflow-y: auto !important; /* Internal scroll */
+    overflow-y: auto !important;
     height: auto !important;
     padding-bottom: 20px !important;
     -webkit-overflow-scrolling: touch;
@@ -110,11 +111,13 @@
 
   .chat-input-bar-container {
     flex-shrink: 0 !important;
-    position: relative !important; /* Stays at bottom of flex container */
+    position: sticky !important; /* Changed from relative to sticky */
+    bottom: 0 !important;
     width: 100% !important;
     background: var(--ms-bg) !important;
     padding: 10px 0 !important;
-    z-index: 10;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important; /* Add safe area */
+    z-index: 100 !important;
     border-top: 1px solid var(--ms-border-subtle);
   }
 

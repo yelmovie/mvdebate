@@ -350,7 +350,7 @@ export default function ChatPanel() {
 
             {/* 턴 수 및 글자 수 표시 */}
             {/* Input Container (Natural Flow on Mobile) */}
-            <div className="chat-input-bar-container">
+              <div className="chat-input-bar-container">
               <div style={{ marginBottom: 8, fontSize: 12, color: "var(--ms-text-muted)", display: "flex", justifyContent: "space-between" }}>
                 <span>{input.length}/{DEBATE_CONFIG.MAX_INPUT_CHARS}자</span>
               </div>
@@ -361,11 +361,26 @@ export default function ChatPanel() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onFocus={(e) => {
-                    // Mobile: Scroll into view when focused
-                    if (window.innerWidth <= 480) {
+                    // Mobile: Scroll into view and add padding
+                    if (window.innerWidth <= 640) {
                       setTimeout(() => {
                         e.target.scrollIntoView({ behavior: "smooth", block: "center" });
                       }, 300);
+                      // Add padding to chat messages container to push content up
+                      const messagesContainer = document.querySelector('.chat-messages') as HTMLElement;
+                      if (messagesContainer) {
+                        messagesContainer.style.paddingBottom = '250px';
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                      }
+                    }
+                  }}
+                  onBlur={() => {
+                    // Reset padding
+                    if (window.innerWidth <= 640) {
+                      const messagesContainer = document.querySelector('.chat-messages') as HTMLElement;
+                      if (messagesContainer) {
+                        messagesContainer.style.paddingBottom = '20px'; // Reset to original
+                      }
                     }
                   }}
                   placeholder={UI_TEXT.INPUT_PLACEHOLDER}
