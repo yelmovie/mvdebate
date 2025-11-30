@@ -219,7 +219,7 @@ export default function ChatPanel() {
 
 
   return (
-    <div style={{ width: "100%", display: "flex", justifyContent: "center", gap: "24px", flexWrap: "wrap", marginTop: 24, padding: "0 12px", position: "relative" }}>
+    <div className="chat-panel-wrapper" style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: 24, padding: "0 12px", position: "relative" }}>
       {showWaiting && currentTopic && stance && selectedPersonaId && (
         <PersonaWaitingScreen
           personaId={selectedPersonaId}
@@ -227,13 +227,19 @@ export default function ChatPanel() {
           stance={stance}
         />
       )}
-      <section className="debate-card chat-panel" style={{ width: "100%", maxWidth: "768px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+      <section className="debate-card chat-panel" style={{ 
+        width: "100%", 
+        maxWidth: "768px", 
+        display: "flex", 
+        flexDirection: "column",
+        height: "calc(100dvh - 140px)", // Dynamic height for mobile
+        minHeight: "500px" // Minimum height for desktop
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8, flexShrink: 0 }}>
           <h2 className="debate-section-title" style={{ margin: 0 }}>
             <span className="dot" />
             <span>5단계. AI와 모의 토론</span>
           </h2>
-          
         </div>
 
         {/* Persona Header */}
@@ -246,7 +252,8 @@ export default function ChatPanel() {
             padding: "12px 16px", 
             borderRadius: "12px", 
             marginBottom: "12px",
-            border: "2px solid var(--ms-border-subtle)"
+            border: "2px solid var(--ms-border-subtle)",
+            flexShrink: 0
           }}>
             <div style={{ position: "relative", width: "60px", height: "60px", flexShrink: 0 }}>
               <img 
@@ -267,7 +274,16 @@ export default function ChatPanel() {
         )}
 
         {session && currentTopic && (
-          <div className="debate-topic-header" style={{ marginBottom: 12, position: "sticky", top: 0, zIndex: 10, background: "var(--ms-bg)", padding: "8px 0", borderBottom: "1px solid var(--ms-border-subtle)" }}>
+          <div className="debate-topic-header" style={{ 
+            marginBottom: 12, 
+            position: "sticky", 
+            top: 0, 
+            zIndex: 10, 
+            background: "var(--ms-bg)", 
+            padding: "8px 0", 
+            borderBottom: "1px solid var(--ms-border-subtle)",
+            flexShrink: 0
+          }}>
             <span className="topic-pill">{currentTopic.title}</span>
             {session.stance && (
               <span className={`badge-stance ${session.stance}`}>
@@ -280,7 +296,12 @@ export default function ChatPanel() {
           </div>
         )}
 
-        <div className="chat-messages">
+        <div className="chat-messages" style={{ 
+          flex: 1, 
+          overflowY: "auto", 
+          minHeight: 0, 
+          paddingBottom: "1rem" 
+        }}>
           {turns.map((t) => (
             <div
               key={t.id}
@@ -318,7 +339,7 @@ export default function ChatPanel() {
 
         {/* 토론 종료 전: 입력창 표시 */}
         {!isEnded && (
-          <>
+          <div style={{ flexShrink: 0, marginTop: "auto" }}>
             {/* 힌트 메시지 */}
             <div className="input-hint">
               {turns.length === 0 
@@ -380,12 +401,12 @@ export default function ChatPanel() {
                 </div>
               </form>
             </div>
-          </>
+          </div>
         )}
         
         {/* 20턴 도달 시 안내 메시지 */}
         {isEnded && studentTurnCount >= MAX_TURNS && (
-          <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center" }}>
+          <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center", flexShrink: 0 }}>
             <p className="hint-text" style={{ margin: 0 }}>
               토론이 {MAX_TURNS}턴에 도달하여 종료되었습니다. 평가를 진행해 주세요.
             </p>
@@ -394,9 +415,9 @@ export default function ChatPanel() {
 
         {/* 토론 종료 후: 안내 메시지 */}
         {isEnded && (
-          <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center" }}>
+          <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center", flexShrink: 0 }}>
             <p className="hint-text" style={{ margin: 0 }}>
-              토론이 종료되었습니다. 오른쪽 패널에서 평가를 확인하고 PDF로 저장할 수 있습니다.
+              토론이 종료되었습니다. 아래 평가·보고서 영역에서 결과를 확인하고 PDF로 저장할 수 있습니다.
             </p>
           </div>
         )}

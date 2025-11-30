@@ -233,7 +233,7 @@ function DebateContent() {
                 gap: 8
               }}
             >
-              <span>{showSummaryPanel ? "📊 토론 결과 보고서 숨기기" : "📊 토론 결과 보고서 보기"}</span>
+              <span>{showSummaryPanel ? "📊 토론 결과 보고서 숨기기" : "📊 토론 결과 보고서 보기 (아래)"}</span>
               <span style={{ fontSize: 18 }}>{showSummaryPanel ? "▲" : "▼"}</span>
             </button>
           </div>
@@ -242,7 +242,7 @@ function DebateContent() {
           {showSummaryPanel && (
             <div
               className="summary-panel"
-              style={{ marginTop: 24, maxWidth: "768px", margin: "24px auto" }}
+              style={{ marginTop: 24, maxWidth: "768px", margin: "24px auto", width: "100%" }}
             >
               <SummaryPanel />
             </div>

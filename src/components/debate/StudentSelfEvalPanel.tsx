@@ -28,9 +28,9 @@ export default function StudentSelfEvalPanel() {
         <div className="self-eval-container" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {/* 1. 주장 명확성 */}
           <div className="eval-card" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, background: "var(--ms-bg-soft)", borderRadius: 12 }}>
-            <div className="eval-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="eval-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 600 }}>1. 내 주장을 명확하게 말했나요?</span>
-              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center" }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
@@ -53,9 +53,9 @@ export default function StudentSelfEvalPanel() {
 
           {/* 2. 근거 적절성 */}
           <div className="eval-card" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, background: "var(--ms-bg-soft)", borderRadius: 12 }}>
-            <div className="eval-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="eval-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 600 }}>2. 근거를 잘 들어 설명했나요?</span>
-              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center" }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
@@ -78,9 +78,9 @@ export default function StudentSelfEvalPanel() {
 
           {/* 3. 태도 */}
           <div className="eval-card" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, background: "var(--ms-bg-soft)", borderRadius: 12 }}>
-            <div className="eval-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="eval-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 600 }}>3. 상대방을 존중하며 말했나요?</span>
-              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center" }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}

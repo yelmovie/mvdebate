@@ -40,7 +40,7 @@
   .debate-layout {
     gap: 1rem !important;
     display: flex;
-    flex-direction: column;
+    flex-direction: column !important;
   }
 
   /* --- 1. Header Navigation (Horizontal Scroll) --- */
