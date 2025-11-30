@@ -78,7 +78,7 @@ export default function TeacherBoardModal({ open, onClose }: Props) {
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
-        <div style={{ padding: "20px" }}>
+        <div className="modal-content">
           {!isAuthenticated ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <p style={{ fontSize: 14, color: "var(--ms-text)" }}>관리자 비밀번호를 입력하세요.</p>

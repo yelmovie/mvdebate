@@ -25,73 +25,79 @@ export default function StudentSelfEvalPanel() {
           토론을 하면서 스스로 얼마나 잘했는지 별점을 매겨보세요. (나만 볼 수 있어요!)
         </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="self-eval-container" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {/* 1. 주장 명확성 */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 14, fontWeight: 500 }}>내 주장을 명확하게 말했나요?</span>
-            <div style={{ display: "flex", gap: 4 }}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => handleScoreChange("clarity", star)}
-                  style={{
-                    fontSize: 24,
-                    color: star <= scores.clarity ? "#fbbf24" : "#e5e7eb",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0
-                  }}
-                >
-                  ★
-                </button>
-              ))}
+          <div className="eval-card" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, background: "var(--ms-bg-soft)", borderRadius: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 15, fontWeight: 600 }}>1. 내 주장을 명확하게 말했나요?</span>
+              <div style={{ display: "flex", gap: 4 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => handleScoreChange("clarity", star)}
+                    style={{
+                      fontSize: 28,
+                      color: star <= scores.clarity ? "#fbbf24" : "#e5e7eb",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 4
+                    }}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* 2. 근거 적절성 */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 14, fontWeight: 500 }}>근거를 잘 들어 설명했나요?</span>
-            <div style={{ display: "flex", gap: 4 }}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => handleScoreChange("logic", star)}
-                  style={{
-                    fontSize: 24,
-                    color: star <= scores.logic ? "#fbbf24" : "#e5e7eb",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0
-                  }}
-                >
-                  ★
-                </button>
-              ))}
+          <div className="eval-card" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, background: "var(--ms-bg-soft)", borderRadius: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 15, fontWeight: 600 }}>2. 근거를 잘 들어 설명했나요?</span>
+              <div style={{ display: "flex", gap: 4 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => handleScoreChange("logic", star)}
+                    style={{
+                      fontSize: 28,
+                      color: star <= scores.logic ? "#fbbf24" : "#e5e7eb",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 4
+                    }}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* 3. 태도 */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 14, fontWeight: 500 }}>상대방을 존중하며 말했나요?</span>
-            <div style={{ display: "flex", gap: 4 }}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => handleScoreChange("attitude", star)}
-                  style={{
-                    fontSize: 24,
-                    color: star <= scores.attitude ? "#fbbf24" : "#e5e7eb",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0
-                  }}
-                >
-                  ★
-                </button>
-              ))}
+          <div className="eval-card" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, background: "var(--ms-bg-soft)", borderRadius: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 15, fontWeight: 600 }}>3. 상대방을 존중하며 말했나요?</span>
+              <div style={{ display: "flex", gap: 4 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => handleScoreChange("attitude", star)}
+                    style={{
+                      fontSize: 28,
+                      color: star <= scores.attitude ? "#fbbf24" : "#e5e7eb",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 4
+                    }}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

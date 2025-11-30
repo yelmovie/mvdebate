@@ -327,48 +327,51 @@ export default function ChatPanel() {
             </div>
 
             {/* 턴 수 및 글자 수 표시 */}
-            <div style={{ marginBottom: 8, fontSize: 12, color: "var(--ms-text-muted)", display: "flex", justifyContent: "space-between" }}>
-              <span>{input.length}/{MAX_INPUT_CHARS}자</span>
-            </div>
-            <form className="chat-input-bar" onSubmit={handleSend} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <textarea
-                className="chat-textarea"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="AI에게 말하고 싶은 내용을 적어 보세요. (Enter: 전송, Shift+Enter: 줄바꿈)"
-                rows={3}
-                style={{ width: "100%", resize: "none" }}
-              />
-              <div style={{ display: "flex", gap: "8px", width: "100%" }}>
-                <button
-                  className="btn btn-primary"
-                  type="submit"
-                  disabled={isLoading || !input.trim() || studentTurnCount >= MAX_TURNS}
-                  style={{ flex: 1, padding: "12px" }}
-                >
-                  보내기
-                </button>
-                <button
-                  type="button"
-                  onClick={handleEndDebate}
-                  className="btn btn-secondary"
-                  disabled={isLoading || isEnded}
-                  style={{ whiteSpace: "nowrap", padding: "12px 16px" }}
-                >
-                  종료
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRestart}
-                  className="btn btn-secondary"
-                  disabled={isLoading}
-                  style={{ whiteSpace: "nowrap", padding: "12px 16px" }}
-                >
-                  다시
-                </button>
+            {/* Fixed Input Container for Mobile */}
+            <div className="chat-input-bar-container">
+              <div style={{ marginBottom: 8, fontSize: 12, color: "var(--ms-text-muted)", display: "flex", justifyContent: "space-between" }}>
+                <span>{input.length}/{MAX_INPUT_CHARS}자</span>
               </div>
-            </form>
+              <form className="chat-input-bar" onSubmit={handleSend} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <textarea
+                  className="chat-textarea"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="AI에게 말하고 싶은 내용을 적어 보세요. (Enter: 전송, Shift+Enter: 줄바꿈)"
+                  rows={3}
+                  style={{ width: "100%", resize: "none" }}
+                />
+                <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+                  <button
+                    className="btn btn-primary"
+                    type="submit"
+                    disabled={isLoading || !input.trim() || studentTurnCount >= MAX_TURNS}
+                    style={{ flex: 1, padding: "12px" }}
+                  >
+                    보내기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleEndDebate}
+                    className="btn btn-secondary"
+                    disabled={isLoading || isEnded}
+                    style={{ whiteSpace: "nowrap", padding: "12px 16px" }}
+                  >
+                    종료
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRestart}
+                    className="btn btn-secondary"
+                    disabled={isLoading}
+                    style={{ whiteSpace: "nowrap", padding: "12px 16px" }}
+                  >
+                    다시
+                  </button>
+                </div>
+              </form>
+            </div>
           </>
         )}
         
