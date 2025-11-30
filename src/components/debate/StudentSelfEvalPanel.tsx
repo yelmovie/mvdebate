@@ -30,7 +30,7 @@ export default function StudentSelfEvalPanel() {
           <div className="eval-card" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, background: "var(--ms-bg-soft)", borderRadius: 12 }}>
             <div className="eval-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 15, fontWeight: 600 }}>1. 내 주장을 명확하게 말했나요?</span>
-              <div style={{ display: "flex", gap: 4 }}>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
@@ -55,7 +55,7 @@ export default function StudentSelfEvalPanel() {
           <div className="eval-card" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, background: "var(--ms-bg-soft)", borderRadius: 12 }}>
             <div className="eval-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 15, fontWeight: 600 }}>2. 근거를 잘 들어 설명했나요?</span>
-              <div style={{ display: "flex", gap: 4 }}>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
@@ -80,7 +80,7 @@ export default function StudentSelfEvalPanel() {
           <div className="eval-card" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, background: "var(--ms-bg-soft)", borderRadius: 12 }}>
             <div className="eval-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 15, fontWeight: 600 }}>3. 상대방을 존중하며 말했나요?</span>
-              <div style={{ display: "flex", gap: 4 }}>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
