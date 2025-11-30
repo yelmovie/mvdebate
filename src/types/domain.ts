@@ -37,6 +37,7 @@ export interface DebateSession {
   createdAt: string;
   finishedAt?: string;
   summary?: string;
+  personaId?: string; // Added for Persona feature
 }
 
 /** 루브릭 점수 한 칸 */
@@ -99,6 +100,13 @@ export interface AiEvaluation {
   comment: string;     // 총평
 }
 
+/** 학생 자기 평가 */
+export interface StudentSelfEvaluation {
+  clarity: number;
+  logic: number;
+  attitude: number;
+}
+
 
 export interface RubricItem {
   id: string;
@@ -111,3 +119,12 @@ export interface Rubric {
   title: string;
   items: RubricItem[];
 }
+
+/**
+ * API Response Wrapper
+ */
+export interface ApiResponse<T> {
+  data?: T;
+  error?: string;
+}
+

@@ -12,6 +12,7 @@ import { apiFetch } from "../../services/apiClient";
 import { PERSONAS } from "../../config/personas";
 import Image from "next/image";
 import PersonaWaitingScreen from "./PersonaWaitingScreen";
+import { DEBATE_CONFIG, UI_TEXT } from "../../shared/constants";
 
 export default function ChatPanel() {
   const {
@@ -108,8 +109,8 @@ export default function ChatPanel() {
     
     if (!input.trim()) return;
 
-    if (input.length > MAX_INPUT_CHARS) {
-      alert(`한 번에 ${MAX_INPUT_CHARS}자까지만 쓸 수 있어요.\n핵심만 간단히 적어보자!`);
+    if (input.length > DEBATE_CONFIG.MAX_INPUT_CHARS) {
+      alert(`한 번에 ${DEBATE_CONFIG.MAX_INPUT_CHARS}자까지만 쓸 수 있어요.\n핵심만 간단히 적어보자!`);
       return;
     }
 
@@ -121,7 +122,7 @@ export default function ChatPanel() {
     if (isLoading) return; // Assuming 'isSending' in the instruction refers to 'isLoading' from the store
     
     // 20턴 체크: 다음 턴이 20턴이면 여기서 종료
-    if (studentTurnCount + 1 >= MAX_TURNS) {
+    if (studentTurnCount + 1 >= DEBATE_CONFIG.MAX_TURNS) {
       setEnded(true);
       // 마지막 메시지는 보내지 않고 바로 평가 모달 열기
       // SummaryPanel의 handleEndDebate를 트리거하기 위해 상태만 변경
@@ -142,7 +143,7 @@ export default function ChatPanel() {
       // turns.length는 현재까지의 턴 수. 이번에 학생이 보내면 +1.
       const currentTurnCount = turns.length + 1;
       const turnIndex = currentTurnCount; // 이번 AI 응답의 턴 번호
-      const maxTurns = MAX_TURNS;
+      const maxTurns = DEBATE_CONFIG.MAX_TURNS;
       
       // phase 계산
       let phase: "normal" | "closing-warning" | "closing-final" = "normal";
@@ -180,7 +181,7 @@ export default function ChatPanel() {
       }
       
       // AI 응답 후에도 20턴 체크 (AI 응답 포함해서 20턴이면 종료)
-      if (studentTurnCount + 1 >= MAX_TURNS) {
+      if (studentTurnCount + 1 >= DEBATE_CONFIG.MAX_TURNS) {
         setEnded(true);
       }
     } catch (e: any) {
@@ -291,7 +292,7 @@ export default function ChatPanel() {
               </span>
             )}
             <span style={{ marginLeft: "auto", fontSize: "14px", fontWeight: "bold", color: "var(--ms-primary)" }}>
-              {studentTurnCount}/{MAX_TURNS}턴
+              {studentTurnCount}/{DEBATE_CONFIG.MAX_TURNS}턴
             </span>
           </div>
         )}
@@ -351,7 +352,7 @@ export default function ChatPanel() {
             {/* Input Container (Natural Flow on Mobile) */}
             <div className="chat-input-bar-container">
               <div style={{ marginBottom: 8, fontSize: 12, color: "var(--ms-text-muted)", display: "flex", justifyContent: "space-between" }}>
-                <span>{input.length}/{MAX_INPUT_CHARS}자</span>
+                <span>{input.length}/{DEBATE_CONFIG.MAX_INPUT_CHARS}자</span>
               </div>
               <form className="chat-input-bar" onSubmit={handleSend} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <textarea
@@ -367,7 +368,7 @@ export default function ChatPanel() {
                       }, 300);
                     }
                   }}
-                  placeholder="AI에게 말하고 싶은 내용을 적어 보세요. (Enter: 전송, Shift+Enter: 줄바꿈)"
+                  placeholder={UI_TEXT.INPUT_PLACEHOLDER}
                   rows={3}
                   style={{ width: "100%", resize: "none" }}
                 />
@@ -375,10 +376,10 @@ export default function ChatPanel() {
                   <button
                     className="btn btn-primary"
                     type="submit"
-                    disabled={isLoading || !input.trim() || studentTurnCount >= MAX_TURNS}
+                    disabled={isLoading || !input.trim() || studentTurnCount >= DEBATE_CONFIG.MAX_TURNS}
                     style={{ flex: 1, padding: "12px" }}
                   >
-                    보내기
+                    {UI_TEXT.SEND_BUTTON}
                   </button>
                   <button
                     type="button"
@@ -387,7 +388,7 @@ export default function ChatPanel() {
                     disabled={isLoading || isEnded}
                     style={{ whiteSpace: "nowrap", padding: "12px 16px" }}
                   >
-                    종료
+                    {UI_TEXT.END_BUTTON}
                   </button>
                   <button
                     type="button"
@@ -396,7 +397,7 @@ export default function ChatPanel() {
                     disabled={isLoading}
                     style={{ whiteSpace: "nowrap", padding: "12px 16px" }}
                   >
-                    다시
+                    {UI_TEXT.RESTART_BUTTON}
                   </button>
                 </div>
               </form>
@@ -405,10 +406,10 @@ export default function ChatPanel() {
         )}
         
         {/* 20턴 도달 시 안내 메시지 */}
-        {isEnded && studentTurnCount >= MAX_TURNS && (
+        {isEnded && studentTurnCount >= DEBATE_CONFIG.MAX_TURNS && (
           <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center", flexShrink: 0 }}>
             <p className="hint-text" style={{ margin: 0 }}>
-              토론이 {MAX_TURNS}턴에 도달하여 종료되었습니다. 평가를 진행해 주세요.
+              토론이 {DEBATE_CONFIG.MAX_TURNS}턴에 도달하여 종료되었습니다. 평가를 진행해 주세요.
             </p>
           </div>
         )}
@@ -417,7 +418,7 @@ export default function ChatPanel() {
         {isEnded && (
           <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center", flexShrink: 0 }}>
             <p className="hint-text" style={{ margin: 0 }}>
-              토론이 종료되었습니다. 아래 평가·보고서 영역에서 결과를 확인하고 PDF로 저장할 수 있습니다.
+              {window.innerWidth <= 768 ? UI_TEXT.END_DEBATE_MOBILE : UI_TEXT.END_DEBATE_DESKTOP}
             </p>
           </div>
         )}

@@ -202,3 +202,82 @@
     position: static;
   }
 }
+
+/* DebatePrepField Styles */
+.prep-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.prep-textarea {
+  flex: 1;
+  resize: vertical;
+}
+
+.prep-add-btn {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+}
+
+.mobile-only {
+  display: none;
+}
+
+/* Mobile styles for PrepField */
+@media (max-width: 640px) {
+  .prep-input-row {
+    flex-direction: column;
+  }
+
+  .prep-add-btn {
+    width: 100%;
+    border-radius: 8px; /* More standard button shape on mobile */
+  }
+
+  .mobile-only {
+    display: inline;
+  }
+
+  /* --- Fix 2: Chat Messages Visibility --- */
+  .chat-messages {
+    height: auto !important;
+    overflow-y: visible !important; /* Allow natural scroll */
+    padding-bottom: 100px !important; /* Space for input bar */
+    flex: 1 1 auto !important;
+  }
+
+  .chat-panel {
+    height: 100dvh !important;
+    overflow: hidden !important; /* Container handles scroll */
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .chat-panel-wrapper {
+    height: 100dvh !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+  }
+
+  .chat-bubble {
+    max-width: 85% !important; /* Prevent too wide bubbles */
+  }
+
+  /* --- Fix 3: Self Eval Stars --- */
+  .eval-header > div:last-child {
+    flex-wrap: nowrap !important; /* Force single line */
+    white-space: nowrap !important;
+    overflow-x: auto !important; /* Horizontal scroll if absolutely needed */
+    max-width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Target the star buttons specifically */
+  .eval-header button {
+    font-size: 20px !important; /* Reduce size */
+    padding: 0 2px !important; /* Reduce padding */
+    margin: 0 !important;
+  }
+}

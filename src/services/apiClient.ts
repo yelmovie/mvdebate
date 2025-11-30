@@ -1,3 +1,5 @@
+import { ERROR_MESSAGES } from "../shared/constants";
+
 /**
  * Generic API client with error handling
  * Single Responsibility: HTTP request/response handling
@@ -36,8 +38,8 @@ export async function apiFetch<T>(
     }
     // Handle network errors
     if (error instanceof TypeError && error.message.includes("fetch")) {
-      throw new Error("네트워크 오류: 서버에 연결할 수 없습니다.");
+      throw new Error(ERROR_MESSAGES.NETWORK_ERROR);
     }
-    throw new Error("알 수 없는 오류가 발생했습니다.");
+    throw new Error(ERROR_MESSAGES.UNKNOWN_ERROR);
   }
 }

@@ -37,6 +37,8 @@ export interface DebateAIResponse {
   rawResponse?: UpstageResponse;
 }
 
+import { ERROR_MESSAGES } from "../../shared/constants";
+
 /**
  * Sends a debate message to Upstage API
  * 
@@ -54,12 +56,15 @@ export async function sendDebateMessage({
   userMessage: string;
   history?: UpstageMessage[];
 }): Promise<DebateAIResponse> {
+  // Security: Ensure this runs only on server
+  if (typeof window !== "undefined") {
+    throw new Error("Upstage API client must be called from server-side only.");
+  }
+
   // Validate API key
   const apiKey = process.env.UPSTAGE_API_KEY;
   if (!apiKey) {
-    throw new Error(
-      "UPSTAGE_API_KEY is not set. Please add it to .env.local file."
-    );
+    throw new Error(ERROR_MESSAGES.API_KEY_MISSING);
   }
 
   // Prepare request
@@ -95,8 +100,7 @@ export async function sendDebateMessage({
 
     // Handle HTTP errors
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      // 보안: API 키나 민감 정보가 포함될 수 있는 전체 응답은 로그하지 않음
+      // Security: Do not log full error body if it contains sensitive info
       console.error(`[Upstage API] HTTP ${response.status}: Request failed`);
       throw new Error(
         `Upstage API request failed: ${response.status} ${response.statusText}`
@@ -111,8 +115,8 @@ export async function sendDebateMessage({
       data.choices?.[0]?.message?.content?.trim() ?? "";
 
     if (!aiText) {
-      console.error("[Upstage API] Empty response:", data);
-      throw new Error("Upstage API returned empty response");
+      console.error("[Upstage API] Empty response received");
+      throw new Error(ERROR_MESSAGES.EMPTY_RESPONSE);
     }
 
     return {
@@ -123,7 +127,7 @@ export async function sendDebateMessage({
     // Network errors
     if (error instanceof TypeError && error.message.includes("fetch")) {
       console.error("[Upstage API] Network error:", error.message);
-      throw new Error("Network error: Could not connect to Upstage API");
+      throw new Error(ERROR_MESSAGES.NETWORK_ERROR);
     }
 
     // Re-throw known errors
@@ -133,7 +137,7 @@ export async function sendDebateMessage({
 
     // Unknown errors
     console.error("[Upstage API] Unknown error:", error);
-    throw new Error("An unexpected error occurred while calling Upstage API");
+    throw new Error(ERROR_MESSAGES.UNKNOWN_ERROR);
   }
 }
 

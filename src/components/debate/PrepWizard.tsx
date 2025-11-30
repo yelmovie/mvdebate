@@ -1,48 +1,33 @@
 "use client";
 
 import { useDebateStore } from "../../store/debateStore";
-import { useState } from "react";
+import { DebatePrepField } from "./DebatePrepField";
 
 export default function PrepWizard() {
   const {
-    claim,
     reasons,
     evidences,
-    expectedCounter,
-    rebuttal,
     setStructureFromLabel
   } = useDebateStore();
-  const [localClaim, setLocalClaim] = useState(claim || "");
-  const [localReason, setLocalReason] = useState("");
-  const [localEvidence, setLocalEvidence] = useState("");
-  const [localCounter, setLocalCounter] = useState(expectedCounter || "");
-  const [localRebuttal, setLocalRebuttal] = useState(rebuttal || "");
 
-  const addReason = () => {
-    if (!localReason.trim()) return;
-    setStructureFromLabel("reason", localReason.trim());
-    setLocalReason("");
+  const addReason = (text: string) => {
+    setStructureFromLabel("reason", text);
   };
 
-  const addEvidence = () => {
-    if (!localEvidence.trim()) return;
-    setStructureFromLabel("evidence", localEvidence.trim());
-    setLocalEvidence("");
+  const addEvidence = (text: string) => {
+    setStructureFromLabel("evidence", text);
   };
 
-  const saveClaim = () => {
-    if (!localClaim.trim()) return;
-    setStructureFromLabel("claim", localClaim.trim());
+  const saveClaim = (text: string) => {
+    setStructureFromLabel("claim", text);
   };
 
-  const saveCounter = () => {
-    if (!localCounter.trim()) return;
-    setStructureFromLabel("counterargument", localCounter.trim());
+  const saveCounter = (text: string) => {
+    setStructureFromLabel("counterargument", text);
   };
 
-  const saveRebuttal = () => {
-    if (!localRebuttal.trim()) return;
-    setStructureFromLabel("rebuttal", localRebuttal.trim());
+  const saveRebuttal = (text: string) => {
+    setStructureFromLabel("rebuttal", text);
   };
 
   return (
@@ -53,22 +38,11 @@ export default function PrepWizard() {
         <span className="blink-arrow">➡</span>
       </h2>
 
-      <div style={{ marginBottom: 12 }}>
-        <label>
-          <div className="structure-block-title">주장(Claim)</div>
-          <input
-            className="filter-input"
-            value={localClaim}
-            onChange={(e) => setLocalClaim(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && saveClaim()}
-            style={{ width: "100%", marginTop: 4 }}
-            placeholder="내가 하고 싶은 말을 한 문장으로 적어보기"
-          />
-          <div style={{ fontSize: 12, color: "var(--ms-text-muted)", marginTop: 4 }}>
-            💡 내용을 입력하고 엔터(Enter)를 치면 저장됩니다.
-          </div>
-        </label>
-      </div>
+      <DebatePrepField
+        label="주장(Claim)"
+        placeholder="내가 하고 싶은 말을 한 문장으로 적어보기"
+        onAdd={saveClaim}
+      />
 
       <div style={{ marginBottom: 12 }}>
         <div className="structure-block-title">근거(Reason)</div>
@@ -79,17 +53,11 @@ export default function PrepWizard() {
             ))}
           </ol>
         )}
-        <input
-          className="filter-input"
-          value={localReason}
-          onChange={(e) => setLocalReason(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addReason()}
-          style={{ width: "100%", marginTop: 4 }}
+        <DebatePrepField
+          label=""
           placeholder="왜 그렇게 생각하는지 이유를 적어보기"
+          onAdd={addReason}
         />
-        <div style={{ fontSize: 12, color: "var(--ms-text-muted)", marginTop: 4 }}>
-          💡 내용을 입력하고 엔터(Enter)를 치면 추가됩니다.
-        </div>
       </div>
 
       <div style={{ marginBottom: 12 }}>
@@ -101,52 +69,24 @@ export default function PrepWizard() {
             ))}
           </ol>
         )}
-        <input
-          className="filter-input"
-          value={localEvidence}
-          onChange={(e) => setLocalEvidence(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addEvidence()}
-          style={{ width: "100%", marginTop: 4 }}
+        <DebatePrepField
+          label=""
           placeholder="경험, 예시, 기사 등 구체적인 자료 적기"
+          onAdd={addEvidence}
         />
-        <div style={{ fontSize: 12, color: "var(--ms-text-muted)", marginTop: 4 }}>
-          💡 내용을 입력하고 엔터(Enter)를 치면 추가됩니다.
-        </div>
       </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <label>
-          <div className="structure-block-title">예상 반론(Counterargument)</div>
-          <input
-            className="filter-input"
-            value={localCounter}
-            onChange={(e) => setLocalCounter(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && saveCounter()}
-            style={{ width: "100%", marginTop: 4 }}
-            placeholder="반대편에서 뭐라고 말할지 미리 생각해보기"
-          />
-          <div style={{ fontSize: 12, color: "var(--ms-text-muted)", marginTop: 4 }}>
-            💡 내용을 입력하고 엔터(Enter)를 치면 저장됩니다.
-          </div>
-        </label>
-      </div>
+      <DebatePrepField
+        label="예상 반론(Counterargument)"
+        placeholder="반대편에서 뭐라고 말할지 미리 생각해보기"
+        onAdd={saveCounter}
+      />
 
-      <div>
-        <label>
-          <div className="structure-block-title">반론에 대한 답변(Rebuttal)</div>
-          <input
-            className="filter-input"
-            value={localRebuttal}
-            onChange={(e) => setLocalRebuttal(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && saveRebuttal()}
-            style={{ width: "100%", marginTop: 4 }}
-            placeholder="반론에 어떻게 다시 말할지 적어보기"
-          />
-          <div style={{ fontSize: 12, color: "var(--ms-text-muted)", marginTop: 4 }}>
-            💡 내용을 입력하고 엔터(Enter)를 치면 저장됩니다.
-          </div>
-        </label>
-      </div>
+      <DebatePrepField
+        label="반론에 대한 답변(Rebuttal)"
+        placeholder="반론에 어떻게 다시 말할지 적어보기"
+        onAdd={saveRebuttal}
+      />
     </section>
   );
 }

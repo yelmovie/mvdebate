@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import type { StudentSelfEvaluation } from "../../types/domain";
 
 export default function StudentSelfEvalPanel() {
-  const [scores, setScores] = useState({
+  const [scores, setScores] = useState<StudentSelfEvaluation>({
     clarity: 0,
     logic: 0,
     attitude: 0
