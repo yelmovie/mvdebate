@@ -62,8 +62,17 @@ export default function TeacherBoardModal({ open, onClose }: Props) {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
+    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 9999 }}>
+      <div 
+        className="modal-box" 
+        onClick={(e) => e.stopPropagation()} 
+        style={{ 
+          maxWidth: "400px",
+          width: "100%",
+          maxHeight: "90vh",
+          overflowY: "auto"
+        }}
+      >
         <div className="modal-header">
           <h2 className="modal-title">선생님 게시판</h2>
           <button className="modal-close" onClick={onClose}>✕</button>

@@ -7,6 +7,7 @@ import TeacherBoardModal from "../common/TeacherBoardModal";
 import SuggestionModal from "../common/SuggestionModal";
 import QrPopup from "../common/QrPopup";
 import { useScreenMode } from "../../context/ScreenModeContext";
+import ModeSelectionModal from "../common/ModeSelectionModal";
 
 type Theme = "dark" | "light";
 
@@ -50,8 +51,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <header className="app-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-          <button className="app-logo" onClick={goHome}>
+        <div className="header-left" style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <button className="app-logo" onClick={goHome} style={{ flexShrink: 0 }}>
             <img 
               src="/images/logo/profile.png" 
               alt="MovieSam Logo" 
@@ -86,7 +87,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
 
-        <div className="app-right" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div className="app-right" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
           <QrPopup />
 
           <button 
@@ -106,7 +107,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             개발자용
           </button>
 
-          <div style={{ width: "1px", height: "24px", background: "var(--ms-border-subtle)", margin: "0 4px" }}></div>
+          <div className="divider-vertical" style={{ width: "1px", height: "24px", background: "var(--ms-border-subtle)", margin: "0 4px" }}></div>
 
           {/* 화면 모드 토글 */}
           <div className="screen-mode-toggle" style={{ display: "flex", gap: "2px", background: "var(--ms-card)", padding: "2px", borderRadius: "8px", border: "1px solid var(--ms-border-subtle)" }}>
@@ -146,7 +147,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
 
-          <div style={{ width: "1px", height: "24px", background: "var(--ms-border-subtle)", margin: "0 4px" }}></div>
+          <div className="divider-vertical" style={{ width: "1px", height: "24px", background: "var(--ms-border-subtle)", margin: "0 4px" }}></div>
 
           <button className="theme-toggle" onClick={toggleTheme}>
             {theme === "dark" ? (
@@ -181,6 +182,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         open={showSuggestionModal} 
         onClose={() => setShowSuggestionModal(false)} 
       />
+      <ModeSelectionModal />
     </>
   );
 }

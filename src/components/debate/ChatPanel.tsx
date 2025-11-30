@@ -248,7 +248,7 @@ export default function ChatPanel() {
             marginBottom: "12px",
             border: "2px solid var(--ms-border-subtle)"
           }}>
-            <div style={{ position: "relative", width: "60px", height: "60px" }}>
+            <div style={{ position: "relative", width: "60px", height: "60px", flexShrink: 0 }}>
               <img 
                 src={selectedPersona.image} 
                 alt={selectedPersona.name}
@@ -339,31 +339,34 @@ export default function ChatPanel() {
                 placeholder="AI에게 말하고 싶은 내용을 적어 보세요. (Enter: 전송, Shift+Enter: 줄바꿈)"
                 rows={2}
               />
-              <button
-                className="btn btn-primary"
-                type="submit"
-                disabled={isLoading || !input.trim() || studentTurnCount >= MAX_TURNS}
-              >
-                보내기
-              </button>
-              <button
-                type="button"
-                onClick={handleEndDebate}
-                className="btn btn-secondary"
-                disabled={isLoading || isEnded}
-                style={{ whiteSpace: "nowrap" }}
-              >
-                토론 종료
-              </button>
-              <button
-                type="button"
-                onClick={handleRestart}
-                className="btn btn-secondary"
-                disabled={isLoading}
-                style={{ whiteSpace: "nowrap", marginLeft: 8 }}
-              >
-                다시 시작
-              </button>
+              <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+                <button
+                  className="btn btn-primary"
+                  type="submit"
+                  disabled={isLoading || !input.trim() || studentTurnCount >= MAX_TURNS}
+                  style={{ flex: 1 }}
+                >
+                  보내기
+                </button>
+                <button
+                  type="button"
+                  onClick={handleEndDebate}
+                  className="btn btn-secondary"
+                  disabled={isLoading || isEnded}
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  종료
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRestart}
+                  className="btn btn-secondary"
+                  disabled={isLoading}
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  다시
+                </button>
+              </div>
             </form>
           </>
         )}

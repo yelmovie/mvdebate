@@ -147,8 +147,17 @@ export default function SuggestionModal({ open, onClose }: Props) {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
+    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 9999 }}>
+      <div 
+        className="modal-box" 
+        onClick={(e) => e.stopPropagation()} 
+        style={{ 
+          maxWidth: "600px",
+          width: "100%",
+          maxHeight: "90vh",
+          overflowY: "auto"
+        }}
+      >
         <div className="modal-header">
           <h2 className="modal-title">💡 개발자에게 제안하기</h2>
           <button className="modal-close" onClick={onClose}>✕</button>

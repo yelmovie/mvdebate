@@ -2,6 +2,8 @@
  * 전역 스타일
  */
 
+@import './responsive.css';
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -67,13 +69,13 @@ select {
 }
 
 .app-root--tablet-landscape .debate-layout {
-  flex-direction: row;
-  gap: 24px; /* Add gap for spacing */
+  flex-direction: column; /* Stack vertically as requested */
+  gap: 24px;
 }
 
 .app-root--tablet-landscape .debate-layout > div {
   flex: 1;
-  width: 50%; /* Ensure equal split */
+  width: 100%; /* Full width */
 }
 
 /* Screen Mode Toggle Styles */

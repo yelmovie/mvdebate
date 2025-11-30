@@ -1,0 +1,111 @@
+/* Mobile Responsive Styles */
+
+/* Base Resets for Mobile */
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Typography */
+  body {
+    word-break: keep-all; /* Prevent awkward word breaks in Korean */
+  }
+
+  /* Images */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Container Padding */
+  .dashboard-container {
+    padding: 12px !important;
+  }
+
+  .debate-layout {
+    gap: 16px !important;
+  }
+
+  /* Header Navigation Wrapping */
+  .app-header > div {
+    flex-wrap: wrap;
+  }
+  
+  .app-nav-left {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 4px; /* Scrollbar space */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hide scrollbar for nav */
+  .app-nav-left::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Chat Panel Adjustments */
+  .chat-bubble {
+    max-width: 100% !important; /* Allow bubbles to take full width if needed */
+  }
+
+  .chat-input-bar {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .chat-input-bar button {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-top: 8px;
+  }
+
+  /* Persona Header in Chat */
+  .persona-header {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  
+  .persona-header img {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  /* Modals on Mobile */
+  .modal-box {
+    width: calc(100% - 32px) !important;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+}
+
+/* Specific Phone Portrait Overrides */
+.app-root--phone-portrait .app-header {
+  padding: 12px;
+  height: auto; /* Allow height to grow */
+  flex-wrap: wrap;
+}
+
+.app-root--phone-portrait .app-header > div {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.app-root--phone-portrait .app-right {
+  margin-top: 8px;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+/* Modal Positioning for Mobile Safe Area */
+@media (max-width: 480px) {
+  .modal-box {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom) + 16px);
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0 !important;
+    border-radius: 16px;
+  }
+}
