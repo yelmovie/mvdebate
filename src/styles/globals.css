@@ -1,0 +1,91 @@
+/**
+ * 전역 스타일
+ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f9fafb;
+  color: #111827;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+/* 공통 기본값 */
+.app-root {
+  max-width: 1200px;
+  margin: 0 auto;
+  transition: max-width 0.3s ease;
+}
+
+/* 폰용 세로 (9:16) 모드 */
+.app-root--phone-portrait {
+  max-width: 480px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.app-root--phone-portrait .debate-layout {
+  flex-direction: column;
+  gap: 16px; /* Add gap for spacing */
+}
+
+.app-root--phone-portrait .debate-layout > div,
+.app-root--phone-portrait .debate-layout > section {
+  width: 100%;
+  flex: 1;
+  margin: 0 !important; /* Reset any inline margins */
+}
+
+/* 태블릿/PC용 가로 (16:9) 모드 */
+.app-root--tablet-landscape {
+  max-width: 1200px;
+  padding: 0 24px;
+  font-size: 15px;
+}
+
+.app-root--tablet-landscape .debate-layout {
+  flex-direction: row;
+  gap: 24px; /* Add gap for spacing */
+}
+
+.app-root--tablet-landscape .debate-layout > div {
+  flex: 1;
+  width: 50%; /* Ensure equal split */
+}
+
+/* Screen Mode Toggle Styles */
+.screen-mode-toggle .mode-btn:hover {
+  background: rgba(var(--ms-primary-rgb), 0.1) !important;
+}
+.screen-mode-toggle .mode-btn.active:hover {
+  background: var(--ms-primary) !important;
+}
+
+
+
+
+
+

@@ -1,0 +1,1290 @@
+/* ================================
+   MovieSam Theme Root (Cute & Modern)
+   ================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+.moviesam-root {
+  /* 귀엽고 가독성 좋은 'Jua' 폰트를 제목에, 본문은 'Noto Sans KR' 사용 */
+  font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  font-size: 16px; /* 가독성을 위해 기본 폰트 크기 증가 */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 제목용 폰트 클래스 */
+.moviesam-root h1, 
+.moviesam-root h2, 
+.moviesam-root h3, 
+.moviesam-root .app-logo-text,
+.moviesam-root .btn {
+  font-family: "Jua", sans-serif;
+}
+
+/* ================================
+   🎨 Color Palette & Variables
+   ================================ */
+
+/* 다크 테마 (Soft & Dreamy Night) */
+.moviesam-dark {
+  --ms-bg: #1e1e2e; /* 덜 어두운 딥 네이비 */
+  --ms-bg-soft: #252538;
+  --ms-card: #2a2a40;
+  --ms-card-soft: #32324a;
+  --ms-border-subtle: #3f3f5a;
+  --ms-border-strong: #565676;
+
+  --ms-text: #e4e4f0;
+  --ms-text-muted: #a0a0b8;
+  --ms-text-soft: #7c7c94;
+
+  /* 파스텔 네온 포인트 */
+  --ms-primary: #f9a8d4; /* 핑크 */
+  --ms-primary-hover: #f472b6;
+  --ms-secondary: #c4b5fd; /* 라벤더 */
+  --ms-accent: #67e8f9; /* 시안 */
+  --ms-success: #6ee7b7; /* 민트 */
+  --ms-danger: #fda4af; /* 소프트 레드 */
+
+  --ms-radius-lg: 24px; /* 둥글둥글 */
+  --ms-radius-md: 16px;
+  --ms-radius-sm: 10px;
+  --ms-radius-pill: 999px;
+
+  --ms-shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.3);
+  --ms-shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --ms-shadow-hover: 0 10px 20px rgba(249, 168, 212, 0.2);
+}
+
+.moviesam-dark {
+  background-color: var(--ms-bg);
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(196, 181, 253, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(249, 168, 212, 0.08) 0%, transparent 40%);
+  color: var(--ms-text);
+}
+
+/* 라이트 테마 (Bright & Cheerful Day) */
+.moviesam-light {
+  --ms-bg: #fff5f7; /* 아주 연한 핑크빛 화이트 */
+  --ms-bg-soft: #ffffff;
+  --ms-card: #ffffff;
+  --ms-card-soft: #fff0f5;
+  --ms-border-subtle: #fce7f3;
+  --ms-border-strong: #fbcfe8;
+
+  --ms-text: #4a4a6a;
+  --ms-text-muted: #8888aa;
+  --ms-text-soft: #aaaacc;
+
+  /* 선명하고 귀여운 파스텔 */
+  --ms-primary: #ff8fab; /* 캔디 핑크 */
+  --ms-primary-hover: #ff6b8b;
+  --ms-secondary: #a2d2ff; /* 스카이 블루 */
+  --ms-accent: #ffc8dd; /* 연한 핑크 */
+  --ms-success: #bde0fe; /* 베이비 블루 (성공) */
+  --ms-danger: #ffafcc; /* 로즈 핑크 (경고) */
+
+  --ms-radius-lg: 24px;
+  --ms-radius-md: 16px;
+  --ms-radius-sm: 10px;
+  --ms-radius-pill: 999px;
+
+  --ms-shadow-soft: 0 10px 30px rgba(255, 143, 171, 0.15);
+  --ms-shadow-subtle: 0 4px 12px rgba(162, 210, 255, 0.15);
+  --ms-shadow-hover: 0 10px 20px rgba(255, 143, 171, 0.3);
+}
+
+.moviesam-light {
+  background-color: var(--ms-bg);
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(162, 210, 255, 0.2) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(255, 200, 221, 0.2) 0%, transparent 40%);
+  color: var(--ms-text);
+}
+
+/* ================================
+   Layout & Typography
+   ================================ */
+
+.moviesam-dark .dashboard-container,
+.moviesam-light .dashboard-container {
+  max-width: 1000px;
+  margin: 20px auto 40px; /* 배너가 있으므로 상단 여백 줄임 (기존 80px -> 20px) */
+  padding: 0 20px;
+}
+
+.moviesam-dark .dashboard-title,
+.moviesam-light .dashboard-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--ms-text);
+  text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
+}
+
+.moviesam-dark .dashboard-subtitle,
+.moviesam-light .dashboard-subtitle {
+  font-size: 16px;
+  color: var(--ms-text-muted);
+  margin-bottom: 24px;
+}
+
+/* ================================
+   Components: Cards
+   ================================ */
+
+.moviesam-dark .dashboard-card,
+.moviesam-light .dashboard-card {
+  background: var(--ms-card);
+  border-radius: var(--ms-radius-lg);
+  padding: 24px;
+  box-shadow: var(--ms-shadow-subtle);
+  border: 2px solid var(--ms-border-subtle);
+  margin-bottom: 24px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.moviesam-dark .dashboard-card:hover,
+.moviesam-light .dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--ms-shadow-soft);
+}
+
+/* ================================
+   Components: Inputs
+   ================================ */
+
+.moviesam-dark .filter-input,
+.moviesam-light .filter-input {
+  padding: 12px 16px;
+  border-radius: var(--ms-radius-md);
+  border: 2px solid var(--ms-border-subtle);
+  background: var(--ms-bg-soft);
+  color: var(--ms-text);
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
+
+.moviesam-dark .filter-input:focus,
+.moviesam-light .filter-input:focus {
+  outline: none;
+  border-color: var(--ms-primary);
+  box-shadow: 0 0 0 4px rgba(249, 168, 212, 0.2);
+}
+
+/* ================================
+   Components: Buttons (Bubbly & Cute)
+   ================================ */
+
+.moviesam-dark .btn,
+.moviesam-light .btn {
+  padding: 10px 20px;
+  border-radius: var(--ms-radius-pill);
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 700; /* Jua 폰트 효과 극대화 */
+}
+
+.moviesam-dark .btn:active,
+.moviesam-light .btn:active {
+  transform: scale(0.95);
+}
+
+/* Primary Button */
+.moviesam-dark .btn-primary,
+.moviesam-light .btn-primary {
+  background: var(--ms-primary);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--ms-primary-hover); /* 3D 효과 */
+}
+
+.moviesam-dark .btn-primary:hover,
+.moviesam-light .btn-primary:hover {
+  background: var(--ms-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--ms-primary-hover), var(--ms-shadow-hover);
+}
+
+.moviesam-dark .btn-primary:active,
+.moviesam-light .btn-primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--ms-primary-hover);
+}
+
+/* Secondary Button */
+.moviesam-dark .btn-secondary,
+.moviesam-light .btn-secondary {
+  background: var(--ms-card-soft);
+  color: var(--ms-text);
+  border: 2px solid var(--ms-border-subtle);
+}
+
+.moviesam-dark .btn-secondary:hover,
+.moviesam-light .btn-secondary:hover {
+  border-color: var(--ms-text-muted);
+  background: var(--ms-bg);
+}
+
+/* Danger Button */
+.moviesam-dark .btn-danger,
+.moviesam-light .btn-danger {
+  background: var(--ms-danger);
+  color: #fff;
+  box-shadow: 0 4px 0 #f43f5e;
+}
+
+/* ================================
+   Chat UI (Bubble & Cute)
+   ================================ */
+
+.moviesam-dark .chat-bubble,
+.moviesam-light .chat-bubble {
+  max-width: 85%;
+  border-radius: 20px;
+  padding: 12px 18px;
+  font-size: 15px;
+  line-height: 1.5;
+  position: relative;
+  box-shadow: var(--ms-shadow-subtle);
+}
+
+/* Student Bubble */
+.moviesam-dark .chat-bubble--student,
+.moviesam-light .chat-bubble--student {
+  margin-left: auto;
+  background: var(--ms-primary);
+  color: #fff;
+  border-bottom-right-radius: 4px; /* 말풍선 꼬리 효과 */
+}
+
+/* AI Bubble */
+.moviesam-dark .chat-bubble--ai,
+.moviesam-light .chat-bubble--ai {
+  margin-right: auto;
+  background: var(--ms-card-soft);
+  color: var(--ms-text);
+  border: 2px solid var(--ms-border-subtle);
+  border-bottom-left-radius: 4px;
+}
+
+/* Chat Input Area */
+.moviesam-dark .chat-input-bar,
+.moviesam-light .chat-input-bar {
+  background: var(--ms-card);
+  padding: 10px;
+  border-radius: var(--ms-radius-lg);
+  border: 2px solid var(--ms-border-subtle);
+  margin-top: 16px;
+}
+
+.moviesam-dark .chat-textarea,
+.moviesam-light .chat-textarea {
+  border: none;
+  background: transparent;
+  padding: 8px;
+  font-size: 15px;
+  color: var(--ms-text);
+}
+
+.moviesam-dark .chat-textarea:focus,
+.moviesam-light .chat-textarea:focus {
+  box-shadow: none;
+}
+
+/* ================================
+   Header & Nav
+   ================================ */
+
+.app-header {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--ms-border-subtle);
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.moviesam-dark .app-header {
+  background: rgba(30, 30, 46, 0.8);
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.app-logo-mark {
+  width: 40px;
+  height: 40px;
+  background: var(--ms-primary);
+  color: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 20px;
+  transform: rotate(-5deg); /* 귀여운 각도 */
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+}
+
+.app-logo-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ms-text);
+}
+
+.app-logo-sub {
+  font-size: 12px;
+  color: var(--ms-text-muted);
+  font-family: "Noto Sans KR", sans-serif;
+}
+
+.app-nav-tab {
+  padding: 8px 16px;
+  border-radius: var(--ms-radius-pill);
+  color: var(--ms-text-soft);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-family: "Jua", sans-serif;
+}
+
+.app-nav-tab:hover,
+.app-nav-tab--active {
+  background: var(--ms-bg-soft);
+  color: var(--ms-primary);
+}
+
+/* Theme Toggle */
+.theme-toggle {
+  background: var(--ms-card-soft);
+  border: 2px solid var(--ms-border-subtle);
+  padding: 6px 12px;
+  border-radius: var(--ms-radius-pill);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ms-text);
+  font-family: "Jua", sans-serif;
+}
+
+/* ================================
+   Modals
+   ================================ */
+
+.moviesam-dark .modal-backdrop,
+.moviesam-light .modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.moviesam-dark .modal-box,
+.moviesam-light .modal-box {
+  background: var(--ms-card);
+  border-radius: 28px; /* 더 둥글게 */
+  border: 4px solid var(--ms-border-subtle); /* 두꺼운 테두리로 귀여움 강조 */
+  box-shadow: var(--ms-shadow-soft);
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1001;
+}
+
+.moviesam-dark .modal-header,
+.moviesam-light .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px dashed var(--ms-border-subtle); /* 점선 보더 */
+  padding: 20px 20px 12px 20px;
+  margin-bottom: 20px;
+}
+
+.moviesam-dark .modal-title,
+.moviesam-light .modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ms-text);
+  margin: 0;
+  font-family: "Jua", sans-serif;
+}
+
+.moviesam-dark .modal-close,
+.moviesam-light .modal-close {
+  background: var(--ms-bg-soft);
+  border: 2px solid var(--ms-border-subtle);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--ms-text);
+  transition: all 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.moviesam-dark .modal-close:hover,
+.moviesam-light .modal-close:hover {
+  background: var(--ms-primary);
+  color: white;
+  border-color: var(--ms-primary);
+  transform: scale(1.1);
+}
+
+/* ================================
+   Tags & Badges
+   ================================ */
+
+.moviesam-dark .topic-pill,
+.moviesam-light .topic-pill {
+  background: var(--ms-secondary);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+}
+
+.moviesam-dark .badge-stance,
+.moviesam-light .badge-stance {
+  background: var(--ms-accent);
+  color: #333;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+}
+
+
+
+/* ================================
+   Debate Page Layout (Student)
+   ================================ */
+
+.moviesam-dark .debate-layout,
+.moviesam-light .debate-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(280px, 1.2fr);
+  gap: 24px;
+  margin-top: 16px;
+}
+
+@media (max-width: 900px) {
+  .moviesam-dark .debate-layout,
+  .moviesam-light .debate-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 메인 카드 공통 (학생 화면) */
+.moviesam-dark .debate-card,
+.moviesam-light .debate-card {
+  background: var(--ms-card);
+  border-radius: var(--ms-radius-lg);
+  padding: 20px;
+  box-shadow: var(--ms-shadow-subtle);
+  border: 2px solid var(--ms-border-subtle);
+}
+
+/* 섹션 타이틀 */
+.moviesam-dark .debate-section-title,
+.moviesam-light .debate-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ms-primary);
+}
+
+.moviesam-dark .debate-section-title span.dot,
+.moviesam-light .debate-section-title span.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ms-accent);
+  box-shadow: 0 0 8px var(--ms-accent);
+}
+
+/* 토론 주제/입장 바 */
+.moviesam-dark .debate-topic-header,
+.moviesam-light .debate-topic-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* 랜덤 주제 버튼 영역 */
+.moviesam-dark .topic-actions,
+.moviesam-light .topic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* ================================
+   Structure Panel (나의 주장·근거·자료·반론)
+   ================================ */
+
+.moviesam-dark .structure-panel,
+.moviesam-light .structure-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 각 블록 카드 */
+.moviesam-dark .structure-block,
+.moviesam-light .structure-block {
+  border-radius: var(--ms-radius-md);
+  padding: 16px;
+  background: var(--ms-card-soft);
+  border: 2px solid var(--ms-border-subtle);
+  transition: transform 0.2s;
+}
+
+.moviesam-dark .structure-block:hover,
+.moviesam-light .structure-block:hover {
+  transform: scale(1.02);
+  border-color: var(--ms-secondary);
+}
+
+.moviesam-dark .structure-block--evidence,
+.moviesam-light .structure-block--evidence {
+  border-color: var(--ms-success);
+  background: rgba(110, 231, 183, 0.05);
+}
+
+.moviesam-dark .structure-block--counter,
+.moviesam-light .structure-block--counter {
+  border-color: var(--ms-danger);
+  background: rgba(253, 164, 175, 0.05);
+}
+
+/* 구조 블록 제목 */
+.moviesam-dark .structure-block-title,
+.moviesam-light .structure-block-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--ms-text);
+}
+
+/* 구조 블록 내용 (목록) */
+.moviesam-dark .structure-list,
+.moviesam-light .structure-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: var(--ms-text-muted);
+}
+
+.moviesam-dark .structure-list li,
+.moviesam-light .structure-list li {
+  margin-bottom: 4px;
+}
+
+/* 구조 블록 안 설명 */
+.moviesam-dark .structure-hint,
+.moviesam-light .structure-hint {
+  font-size: 13px;
+  color: var(--ms-text-soft);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* ================================
+   Tables (Teacher Board)
+   ================================ */
+
+.moviesam-dark .table-wrapper,
+.moviesam-light .table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--ms-radius-lg);
+  box-shadow: var(--ms-shadow-subtle);
+  border: 2px solid var(--ms-border-subtle);
+  background: var(--ms-card);
+}
+
+.moviesam-dark .table,
+.moviesam-light .table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.moviesam-dark .table thead,
+.moviesam-light .table thead {
+  background: var(--ms-bg-soft);
+  border-bottom: 2px solid var(--ms-border-subtle);
+}
+
+.moviesam-dark .table th,
+.moviesam-light .table th {
+  text-align: left;
+  padding: 16px;
+  font-weight: 700;
+  color: var(--ms-text);
+  font-family: "Jua", sans-serif;
+}
+
+.moviesam-dark .table td,
+.moviesam-light .table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--ms-border-subtle);
+  vertical-align: top;
+  color: var(--ms-text-muted);
+}
+
+.moviesam-dark .table tr:last-child td,
+.moviesam-light .table tr:last-child td {
+  border-bottom: none;
+}
+
+.moviesam-dark .table tr:hover,
+.moviesam-light .table tr:hover {
+  background: var(--ms-bg-soft);
+}
+
+/* 루브릭 요약 칩 */
+.moviesam-dark .rubric-chip,
+.moviesam-light .rubric-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--ms-radius-pill);
+  background: var(--ms-secondary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
+/* ================================
+   Summary Panel
+   ================================ */
+
+.moviesam-dark .summary-panel,
+.moviesam-light .summary-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: var(--ms-bg-soft);
+  border-radius: var(--ms-radius-md);
+  border: 2px dashed var(--ms-border-subtle);
+}
+
+
+.moviesam-dark .summary-panel p,
+.moviesam-light .summary-panel p {
+  font-size: 13px;
+  margin: 4px 0;
+  line-height: 1.5;
+  color: var(--ms-text-muted);
+}
+
+/* ================================
+   현재 토론 주제 / 입장 배너 (Cute Style)
+   ================================ */
+
+.moviesam-dark .debate-banner,
+.moviesam-light .debate-banner {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border-radius: 20px;
+  background: var(--ms-card);
+  border: 2px solid var(--ms-primary);
+  box-shadow: var(--ms-shadow-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+.moviesam-dark .debate-banner::before,
+.moviesam-light .debate-banner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, var(--ms-primary-soft), transparent);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.moviesam-dark .debate-banner-topic,
+.moviesam-light .debate-banner-topic {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  z-index: 1;
+}
+
+.moviesam-dark .debate-banner-title,
+.moviesam-light .debate-banner-title {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: "Jua", sans-serif;
+  color: var(--ms-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.moviesam-dark .debate-banner-label,
+.moviesam-light .debate-banner-label {
+  font-size: 12px;
+  color: var(--ms-text-muted);
+  font-weight: 600;
+}
+
+/* 입장 표시 영역 컨테이너 */
+.moviesam-dark .debate-banner-stances,
+.moviesam-light .debate-banner-stances {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  z-index: 1;
+}
+
+/* 오른쪽 입장 표시 영역 */
+.moviesam-dark .debate-banner-stance,
+.moviesam-light .debate-banner-stance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.moviesam-dark .debate-banner-stance-pill,
+.moviesam-light .debate-banner-stance-pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 찬성/반대 색깔을 다르게 */
+.moviesam-dark .debate-banner-stance-pill--pro,
+.moviesam-light .debate-banner-stance-pill--pro {
+  background: var(--ms-secondary);
+  color: #fff;
+}
+
+.moviesam-dark .debate-banner-stance-pill--con,
+.moviesam-light .debate-banner-stance-pill--con {
+  background: var(--ms-danger);
+  color: #fff;
+}
+
+.moviesam-dark .debate-banner-stance-pill--none,
+.moviesam-light .debate-banner-stance-pill--none {
+  background: var(--ms-bg-soft);
+  border-color: var(--ms-border-subtle);
+  color: var(--ms-text-muted);
+}
+
+/* 주제 미선택 상태 */
+.moviesam-dark .debate-banner-empty,
+.moviesam-light .debate-banner-empty {
+  font-size: 14px;
+  color: var(--ms-text-muted);
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .moviesam-dark .debate-banner,
+  .moviesam-light .debate-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .moviesam-dark .debate-banner-stances,
+  .moviesam-light .debate-banner-stances {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .moviesam-dark .debate-banner-stance,
+  .moviesam-light .debate-banner-stance {
+    align-items: flex-end;
+  }
+}
+
+/* ================================
+   App Header / Nav / Theme Toggle (Mobile)
+   ================================ */
+
+/* 모바일 반응형 스타일 */
+@media (max-width: 768px) {
+  .moviesam-dark .app-header,
+  .moviesam-light .app-header {
+    padding: 0 16px;
+    height: auto;
+    min-height: 60px;
+    flex-wrap: wrap;
+  }
+
+  .moviesam-dark .app-logo-text,
+  .moviesam-light .app-logo-text {
+    display: none; /* 모바일에서는 로고 텍스트 숨김 */
+  }
+
+  .moviesam-dark .app-nav,
+  .moviesam-light .app-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 2px dashed var(--ms-border-subtle);
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 10px;
+  }
+
+  .moviesam-dark .app-nav-tab,
+  .moviesam-light .app-nav-tab {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .moviesam-dark .app-right,
+  .moviesam-light .app-right {
+    gap: 8px;
+  }
+
+  .moviesam-dark .app-home-btn,
+  .moviesam-light .app-home-btn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .moviesam-dark .theme-toggle,
+  .moviesam-light .theme-toggle {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .moviesam-dark .theme-label,
+  .moviesam-light .theme-label {
+    display: none; /* 모바일에서는 라벨 숨김 */
+  }
+
+  /* 대시보드 컨테이너 */
+  .moviesam-dark .dashboard-container,
+  .moviesam-light .dashboard-container {
+    padding: 0 16px;
+    margin-top: 90px;
+  }
+
+  /* 제목/부제 */
+  .moviesam-dark .dashboard-title,
+  .moviesam-light .dashboard-title {
+    font-size: 24px;
+  }
+
+  .moviesam-dark .dashboard-subtitle,
+  .moviesam-light .dashboard-subtitle {
+    font-size: 14px;
+  }
+
+  /* 카드 */
+  .moviesam-dark .dashboard-card,
+  .moviesam-light .dashboard-card {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* debate-layout */
+  .moviesam-dark .debate-layout,
+  .moviesam-light .debate-layout {
+    gap: 16px;
+  }
+
+  /* 채팅 패널 */
+  .moviesam-dark .chat-panel,
+  .moviesam-light .chat-panel {
+    max-height: 500px;
+    min-height: 300px;
+  }
+
+  .moviesam-dark .chat-bubble,
+  .moviesam-light .chat-bubble {
+    max-width: 90%;
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+
+  /* 모달 */
+  .moviesam-dark .modal-box,
+  .moviesam-light .modal-box {
+    width: 95%;
+    max-width: none;
+    padding: 20px;
+    margin: 10px auto;
+    max-height: 90vh;
+  }
+
+  /* 테이블 */
+  .moviesam-dark .table,
+  .moviesam-light .table {
+    font-size: 12px;
+    min-width: 500px;
+  }
+}
+
+/* 작은 모바일 (480px 이하) */
+@media (max-width: 480px) {
+  .moviesam-dark .app-header,
+  .moviesam-light .app-header {
+    padding: 0 12px;
+  }
+
+  .moviesam-dark .dashboard-title,
+  .moviesam-light .dashboard-title {
+    font-size: 22px;
+  }
+
+  /* 채팅 입력 */
+  .moviesam-dark .chat-input-bar,
+  .moviesam-light .chat-input-bar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .moviesam-dark .chat-textarea,
+  .moviesam-light .chat-textarea {
+    width: 100%;
+    min-height: 60px;
+  }
+
+  .moviesam-dark .btn,
+  .moviesam-light .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 처음으로 버튼 */
+.moviesam-dark .app-home-btn,
+.moviesam-light .app-home-btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--ms-border-subtle);
+  background: var(--ms-card-soft);
+  color: var(--ms-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-family: "Jua", sans-serif;
+}
+
+.moviesam-dark .app-home-btn:hover,
+.moviesam-light .app-home-btn:hover {
+  background: var(--ms-bg);
+  border-color: var(--ms-primary);
+  color: var(--ms-primary);
+}
+
+/* 토론 주제 선택 모드 */
+.moviesam-dark .topic-mode-row,
+.moviesam-light .topic-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.moviesam-dark .topic-mode-option,
+.moviesam-light .topic-mode-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.moviesam-dark .topic-select,
+.moviesam-light .topic-select {
+  margin-top: 8px;
+  max-width: 420px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--ms-radius-md);
+  border: 2px solid var(--ms-border-subtle);
+  background: var(--ms-bg-soft);
+  color: var(--ms-text);
+  font-size: 15px;
+}
+
+.moviesam-dark .topic-select:focus,
+.moviesam-light .topic-select:focus {
+  outline: none;
+  border-color: var(--ms-primary);
+  box-shadow: 0 0 0 4px rgba(249, 168, 212, 0.2);
+}
+
+/* 깜빡이는 화살표 애니메이션 */
+@keyframes blink-arrow {
+  0%, 100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.4;
+    transform: translateY(4px);
+  }
+}
+
+.blink-arrow {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--ms-primary);
+  font-size: 20px;
+  animation: blink-arrow 1.5s infinite ease-in-out;
+}
+
+/* 시험 운영 안내 배너 */
+.moviesam-dark .beta-banner,
+.moviesam-light .beta-banner {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(148, 163, 255, 0.35);
+  background: rgba(15, 23, 42, 0.96);
+  color: var(--ms-text-soft);
+  margin-top: 70px; /* 헤더 높이만큼 띄우기 */
+}
+
+/* Header Reorganization */
+.moviesam-dark .btn-teacher-nav,
+.moviesam-light .btn-teacher-nav {
+  background: var(--ms-primary);
+  color: white;
+  padding: 8px 16px;
+  border-radius: var(--ms-radius-pill);
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 0 var(--ms-primary-hover);
+  transition: all 0.2s;
+  font-family: "Jua", sans-serif;
+}
+
+.moviesam-dark .btn-teacher-nav:hover,
+.moviesam-light .btn-teacher-nav:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--ms-primary-hover), var(--ms-shadow-hover);
+}
+
+.moviesam-dark .btn-teacher-nav:active,
+.moviesam-light .btn-teacher-nav:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--ms-primary-hover);
+}
+
+.moviesam-dark .btn-dev-nav,
+.moviesam-light .btn-dev-nav {
+  background: var(--ms-card-soft);
+  color: var(--ms-text);
+  padding: 8px 16px;
+  border-radius: var(--ms-radius-pill);
+  font-weight: 600;
+  font-size: 14px;
+  border: 2px solid var(--ms-border-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+  font-family: "Jua", sans-serif;
+}
+
+.moviesam-dark .btn-dev-nav:hover,
+.moviesam-light .btn-dev-nav:hover {
+  border-color: var(--ms-text-muted);
+  background: var(--ms-bg);
+}
+
+/* Home Page CTA Button */
+.moviesam-dark .btn-cta,
+.moviesam-light .btn-cta {
+  width: 100%;
+  padding: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: var(--ms-radius-lg);
+  background: linear-gradient(135deg, var(--ms-primary), var(--ms-secondary));
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(249, 168, 212, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 12px;
+  font-family: "Jua", sans-serif;
+}
+
+.moviesam-dark .btn-cta:hover,
+.moviesam-light .btn-cta:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(249, 168, 212, 0.6);
+}
+
+.moviesam-dark .btn-cta:active,
+.moviesam-light .btn-cta:active {
+  transform: translateY(2px);
+}
+
+/* Step Indicator */
+.moviesam-dark .step-indicator,
+.moviesam-light .step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ms-text-muted);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.moviesam-dark .step-item,
+.moviesam-light .step-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.moviesam-dark .step-item.active,
+.moviesam-light .step-item.active {
+  color: var(--ms-primary);
+  font-weight: 700;
+}
+
+/* Chat Bubble Improvements */
+.moviesam-dark .chat-bubble,
+.moviesam-light .chat-bubble {
+  line-height: 1.6;
+}
+
+.moviesam-dark .chat-label,
+.moviesam-light .chat-label {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.1);
+}
+
+/* Input Hint */
+.moviesam-dark .input-hint,
+.moviesam-light .input-hint {
+  font-size: 13px;
+  color: var(--ms-primary);
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-align: center;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.moviesam-light .beta-banner {
+  background: #e5edff;
+  color: #1f2937;
+}
+
+.moviesam-dark .beta-text strong,
+.moviesam-light .beta-text strong {
+  font-weight: 600;
+}
+
+.moviesam-dark .beta-dot,
+.moviesam-light .beta-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+}
+
+
+/* QR Popup Trigger */
+.moviesam-dark .qr-popup-trigger,
+.moviesam-light .qr-popup-trigger {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.moviesam-dark .qr-popup-trigger:hover,
+.moviesam-light .qr-popup-trigger:hover {
+  transform: scale(1.1);
+}
