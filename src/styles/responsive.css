@@ -35,18 +35,6 @@
   .dashboard-container {
     padding: 0.75rem !important; /* 12px */
     padding-bottom: 2rem !important;
-  }
-
-  .debate-layout {
-    gap: 1rem !important;
-    display: flex;
-    flex-direction: column !important;
-  }
-
-  /* --- 1. Header Navigation (Horizontal Scroll) --- */
-  .app-header {
-    height: auto !important;
-    padding: 0.5rem 0.75rem !important;
     display: block !important;
   }
 

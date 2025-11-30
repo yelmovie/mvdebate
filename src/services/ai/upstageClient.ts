@@ -76,9 +76,9 @@ export async function sendDebateMessage({
         content: userMessage
       }
     ],
-    temperature: 0.4,
-    top_p: 1.0,
-    max_tokens: 400,
+    temperature: 0.7,
+    top_p: 0.9,
+    max_tokens: 500,
     stream: false
   };
 
