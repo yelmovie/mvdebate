@@ -327,7 +327,7 @@ export default function ChatPanel() {
             </div>
 
             {/* 턴 수 및 글자 수 표시 */}
-            {/* Fixed Input Container for Mobile */}
+            {/* Input Container (Natural Flow on Mobile) */}
             <div className="chat-input-bar-container">
               <div style={{ marginBottom: 8, fontSize: 12, color: "var(--ms-text-muted)", display: "flex", justifyContent: "space-between" }}>
                 <span>{input.length}/{MAX_INPUT_CHARS}자</span>
@@ -338,6 +338,14 @@ export default function ChatPanel() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  onFocus={(e) => {
+                    // Mobile: Scroll into view when focused
+                    if (window.innerWidth <= 480) {
+                      setTimeout(() => {
+                        e.target.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }, 300);
+                    }
+                  }}
                   placeholder="AI에게 말하고 싶은 내용을 적어 보세요. (Enter: 전송, Shift+Enter: 줄바꿈)"
                   rows={3}
                   style={{ width: "100%", resize: "none" }}
