@@ -99,7 +99,7 @@ export default function SummaryPanel() {
   };
 
   return (
-    <div>
+    <div className="summary-panel">
       {/* 토론 종료 버튼만 표시 (요약은 모달에서만 사용) */}
       <div className="debate-section-title" style={{ marginBottom: 8 }}>
         <span className="dot" />

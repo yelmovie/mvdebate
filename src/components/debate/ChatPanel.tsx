@@ -14,6 +14,8 @@ import Image from "next/image";
 import PersonaWaitingScreen from "./PersonaWaitingScreen";
 import { DEBATE_CONFIG, UI_TEXT } from "../../shared/constants";
 
+import StudentSelfEvalPanel from "./StudentSelfEvalPanel";
+
 export default function ChatPanel() {
   const {
     session,
@@ -219,6 +221,34 @@ export default function ChatPanel() {
   };
 
 
+  const inputRef = useRef<HTMLDivElement>(null);
+  const [inputHeight, setInputHeight] = useState(0);
+
+  // Measure input height for dynamic padding
+  useEffect(() => {
+    if (!inputRef.current) return;
+    
+    const updateHeight = () => {
+      if (inputRef.current) {
+        setInputHeight(inputRef.current.offsetHeight);
+      }
+    };
+
+    // Initial measure
+    updateHeight();
+
+    // Observer for resize (e.g. textarea expansion)
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(inputRef.current);
+
+    window.addEventListener('resize', updateHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, []);
+
   return (
     <div className="chat-panel-wrapper" style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: 24, padding: "0 12px", position: "relative" }}>
       {showWaiting && currentTopic && stance && selectedPersonaId && (
@@ -234,7 +264,8 @@ export default function ChatPanel() {
         display: "flex", 
         flexDirection: "column",
         height: "calc(100dvh - 140px)", // Dynamic height for mobile
-        minHeight: "500px" // Minimum height for desktop
+        minHeight: "500px", // Minimum height for desktop
+        position: "relative"
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8, flexShrink: 0 }}>
           <h2 className="debate-section-title" style={{ margin: 0 }}>
@@ -301,7 +332,7 @@ export default function ChatPanel() {
           flex: 1, 
           overflowY: "auto", 
           minHeight: 0, 
-          paddingBottom: "1rem" 
+          paddingBottom: inputHeight > 0 ? `${inputHeight + 20}px` : "1rem" 
         }}>
           {turns.map((t) => (
             <div
@@ -337,71 +368,79 @@ export default function ChatPanel() {
             </p>
           )}
         </div>
-
-        {/* 토론 종료 전: 입력창 표시 */}
+        
+        {/* Zone B: Student Self Eval (Between Chat and Input) */}
         {!isEnded && (
-          <div style={{ flexShrink: 0, marginTop: "auto" }}>
-            {/* 힌트 메시지 */}
-            <div className="input-hint">
+          <div style={{ flexShrink: 0, marginBottom: inputHeight > 0 ? `${inputHeight}px` : "16px" }}>
+            <StudentSelfEvalPanel />
+          </div>
+        )}
+
+        {/* Zone C: Fixed Input (Bottom) */}
+        {!isEnded && (
+          <div 
+            ref={inputRef}
+            className={`chat-input-bar-container ${window.innerWidth <= 480 ? 'chat-input-fixed' : ''}`}
+            style={window.innerWidth > 480 ? { flexShrink: 0, marginTop: "auto" } : {}}
+          >
+            {/* 힌트 메시지 (Moved inside fixed container) */}
+            <div className="input-hint" style={{ marginBottom: "8px", color: "var(--ms-primary)", fontSize: "0.9rem", fontWeight: "bold", textAlign: "center" }}>
               {turns.length === 0 
                 ? "💡 이번에는 [주장]을 명확하게 말해보자!" 
                 : "💡 이번에는 [근거]나 [예시]를 들어볼까?"}
             </div>
 
             {/* 턴 수 및 글자 수 표시 */}
-            {/* Input Container (Natural Flow on Mobile) */}
-              <div className="chat-input-bar-container">
-              <div style={{ marginBottom: 8, fontSize: 12, color: "var(--ms-text-muted)", display: "flex", justifyContent: "space-between" }}>
-                <span>{input.length}/{DEBATE_CONFIG.MAX_INPUT_CHARS}자</span>
-              </div>
-              <form className="chat-input-bar" onSubmit={handleSend} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <textarea
-                  className="chat-textarea"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onFocus={(e) => {
-                    // Mobile: Scroll into view when focused
-                    if (window.innerWidth <= 640) {
-                      setTimeout(() => {
-                        e.target.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }, 300);
-                    }
-                  }}
-                  placeholder={UI_TEXT.INPUT_PLACEHOLDER}
-                  rows={3}
-                  style={{ width: "100%", resize: "none" }}
-                />
-                <div style={{ display: "flex", gap: "8px", width: "100%" }}>
-                  <button
-                    className="btn btn-primary"
-                    type="submit"
-                    disabled={isLoading || !input.trim() || studentTurnCount >= DEBATE_CONFIG.MAX_TURNS}
-                    style={{ flex: 1, padding: "12px" }}
-                  >
-                    {UI_TEXT.SEND_BUTTON}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleEndDebate}
-                    className="btn btn-secondary"
-                    disabled={isLoading || isEnded}
-                    style={{ whiteSpace: "nowrap", padding: "12px 16px" }}
-                  >
-                    {UI_TEXT.END_BUTTON}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleRestart}
-                    className="btn btn-secondary"
-                    disabled={isLoading}
-                    style={{ whiteSpace: "nowrap", padding: "12px 16px" }}
-                  >
-                    {UI_TEXT.RESTART_BUTTON}
-                  </button>
-                </div>
-              </form>
+            <div style={{ marginBottom: 8, fontSize: 12, color: "var(--ms-text-muted)", display: "flex", justifyContent: "space-between" }}>
+              <span>{input.length}/{DEBATE_CONFIG.MAX_INPUT_CHARS}자</span>
             </div>
+            <form className="chat-input-bar" onSubmit={handleSend} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <textarea
+                className="chat-textarea"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={(e) => {
+                  // Mobile: Scroll into view when focused
+                  if (window.innerWidth <= 640) {
+                    setTimeout(() => {
+                      e.target.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }, 300);
+                  }
+                }}
+                placeholder={UI_TEXT.INPUT_PLACEHOLDER}
+                rows={3}
+                style={{ width: "100%", resize: "none" }}
+              />
+              <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+                <button
+                  className="btn btn-primary"
+                  type="submit"
+                  disabled={isLoading || !input.trim() || studentTurnCount >= DEBATE_CONFIG.MAX_TURNS}
+                  style={{ flex: 1, padding: "12px" }}
+                >
+                  {UI_TEXT.SEND_BUTTON}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleEndDebate}
+                  className="btn btn-secondary"
+                  disabled={isLoading || isEnded}
+                  style={{ whiteSpace: "nowrap", padding: "12px 16px" }}
+                >
+                  {UI_TEXT.END_BUTTON}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRestart}
+                  className="btn btn-secondary"
+                  disabled={isLoading}
+                  style={{ whiteSpace: "nowrap", padding: "12px 16px" }}
+                >
+                  {UI_TEXT.RESTART_BUTTON}
+                </button>
+              </div>
+            </form>
           </div>
         )}
         

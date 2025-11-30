@@ -207,8 +207,8 @@ function DebateContent() {
           {/* 채팅창을 가운데로 분리 */}
           <ChatPanel />
 
-          {/* 학생 자기 평가 (5단계의 일부로 포함하거나 별도 섹션으로 배치) */}
-          <StudentSelfEvalPanel />
+          {/* 학생 자기 평가 (ChatPanel 내부로 이동됨) */}
+          {/* <StudentSelfEvalPanel /> */}
 
           {/* 토론 결과 보고서 토글 버튼 */}
           <div style={{ 
