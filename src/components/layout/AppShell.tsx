@@ -109,19 +109,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="divider-vertical" style={{ width: "1px", height: "24px", background: "var(--ms-border-subtle)", margin: "0 4px" }}></div>
 
-          {/* 화면 모드 안내 텍스트 */}
-          <div className="landscape-warning" style={{ 
-            fontSize: "12px", 
-            color: "var(--ms-text-muted)", 
-            fontWeight: "bold",
-            background: "var(--ms-card)",
-            padding: "6px 10px",
-            borderRadius: "8px",
-            border: "1px solid var(--ms-border-subtle)",
-            whiteSpace: "nowrap"
-          }}>
-            가로 모드로만 사용 가능
-          </div>
 
           <div className="divider-vertical" style={{ width: "1px", height: "24px", background: "var(--ms-border-subtle)", margin: "0 4px" }}></div>
 
