@@ -247,6 +247,9 @@ function DebateContent() {
               <SummaryPanel />
             </div>
           )}
+
+          {/* 학생 자기 평가 */}
+          <StudentSelfEvalPanel />
         </>
       )}
     </main>

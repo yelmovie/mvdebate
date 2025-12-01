@@ -109,42 +109,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="divider-vertical" style={{ width: "1px", height: "24px", background: "var(--ms-border-subtle)", margin: "0 4px" }}></div>
 
-          {/* 화면 모드 토글 */}
-          <div className="screen-mode-toggle" style={{ display: "flex", gap: "2px", background: "var(--ms-card)", padding: "2px", borderRadius: "8px", border: "1px solid var(--ms-border-subtle)" }}>
-            <button 
-              onClick={() => setScreenMode("phone-portrait")}
-              className={`mode-btn ${screenMode === "phone-portrait" ? "active" : ""}`}
-              title="폰 모드 (세로)"
-              style={{
-                padding: "6px 8px",
-                borderRadius: "6px",
-                border: "none",
-                background: screenMode === "phone-portrait" ? "var(--ms-primary)" : "transparent",
-                color: screenMode === "phone-portrait" ? "white" : "var(--ms-text-muted)",
-                cursor: "pointer",
-                fontSize: "14px",
-                transition: "all 0.2s"
-              }}
-            >
-              📱
-            </button>
-            <button 
-              onClick={() => setScreenMode("tablet-landscape")}
-              className={`mode-btn ${screenMode === "tablet-landscape" ? "active" : ""}`}
-              title="태블릿/PC 모드 (가로)"
-              style={{
-                padding: "6px 8px",
-                borderRadius: "6px",
-                border: "none",
-                background: screenMode === "tablet-landscape" ? "var(--ms-primary)" : "transparent",
-                color: screenMode === "tablet-landscape" ? "white" : "var(--ms-text-muted)",
-                cursor: "pointer",
-                fontSize: "14px",
-                transition: "all 0.2s"
-              }}
-            >
-              💻
-            </button>
+          {/* 화면 모드 안내 텍스트 */}
+          <div className="landscape-warning" style={{ 
+            fontSize: "12px", 
+            color: "var(--ms-text-muted)", 
+            fontWeight: "bold",
+            background: "var(--ms-card)",
+            padding: "6px 10px",
+            borderRadius: "8px",
+            border: "1px solid var(--ms-border-subtle)",
+            whiteSpace: "nowrap"
+          }}>
+            가로 모드로만 사용 가능
           </div>
 
           <div className="divider-vertical" style={{ width: "1px", height: "24px", background: "var(--ms-border-subtle)", margin: "0 4px" }}></div>

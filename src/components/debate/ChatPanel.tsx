@@ -8,12 +8,9 @@ import type { DebateSessionReport } from "../../types/domain";
 import { containsBadWords } from "../../utils/filterUtils";
 import { getLabelName } from "../../utils/labelClassifier";
 import SelfReflectionModal from "./SelfReflectionModal";
-import { apiFetch } from "../../services/apiClient";
 import { PERSONAS } from "../../config/personas";
-import Image from "next/image";
 import PersonaWaitingScreen from "./PersonaWaitingScreen";
 import { DEBATE_CONFIG, UI_TEXT } from "../../shared/constants";
-
 import StudentSelfEvalPanel from "./StudentSelfEvalPanel";
 
 export default function ChatPanel() {
@@ -39,15 +36,20 @@ export default function ChatPanel() {
   const selectedPersona = PERSONAS.find(p => p.id === selectedPersonaId);
 
   const [input, setInput] = useState("");
-  // const [isEnded, setIsEnded] = useState(false); // Removed local state
-
-  // 20턴 강제 종료를 위한 턴 카운트 (학생 발화 기준)
   const [studentTurnCount, setStudentTurnCount] = useState(0);
-  const MAX_TURNS = 20;
-  const MAX_INPUT_CHARS = 200;
-
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [showWaiting, setShowWaiting] = useState(false);
+
+  // Ref for auto-scrolling
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when turns change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [turns, isLoading]); // Trigger on turns update or loading state change
 
   // AI 첫 응답 대기 상태 관리
   useEffect(() => {
@@ -104,7 +106,6 @@ export default function ChatPanel() {
   if (!session) return null;
 
   const handleSend = async (e?: React.FormEvent) => {
-    // 폼 제출 시 페이지 리로드 방지
     if (e) {
       e.preventDefault();
     }
@@ -121,33 +122,25 @@ export default function ChatPanel() {
       return;
     }
 
-    if (isLoading) return; // Assuming 'isSending' in the instruction refers to 'isLoading' from the store
+    if (isLoading) return;
 
-    // 20턴 체크: 다음 턴이 20턴이면 여기서 종료
     if (studentTurnCount + 1 >= DEBATE_CONFIG.MAX_TURNS) {
       setEnded(true);
-      // 마지막 메시지는 보내지 않고 바로 평가 모달 열기
-      // SummaryPanel의 handleEndDebate를 트리거하기 위해 상태만 변경
       return;
     }
 
     const messageText = input.trim();
-    setInput(""); // 입력창 먼저 비우기 (UX 개선)
-
-    // 학생 턴 수 증가
+    setInput("");
     setStudentTurnCount((prev) => prev + 1);
 
     try {
       setLoading(true);
       setError(undefined);
 
-      // 현재 턴 수 계산 (학생 + AI 합산)
-      // turns.length는 현재까지의 턴 수. 이번에 학생이 보내면 +1.
       const currentTurnCount = turns.length + 1;
-      const turnIndex = currentTurnCount; // 이번 AI 응답의 턴 번호
+      const turnIndex = currentTurnCount;
       const maxTurns = DEBATE_CONFIG.MAX_TURNS;
 
-      // phase 계산
       let phase: "normal" | "closing-warning" | "closing-final" = "normal";
       if (turnIndex >= maxTurns - 2 && turnIndex < maxTurns) {
         phase = "closing-warning";
@@ -155,8 +148,6 @@ export default function ChatPanel() {
         phase = "closing-final";
       }
 
-      // Construct history (Sliding Window: Last 6 turns)
-      // Upstage API expects "user" or "assistant" roles
       const history = turns.slice(-6).map(t => ({
         role: t.sender === "student" ? "user" : "assistant" as "user" | "assistant",
         content: t.text
@@ -182,7 +173,6 @@ export default function ChatPanel() {
         setStructureFromLabel(res.aiTurn.label, res.turn.text);
       }
 
-      // AI 응답 후에도 20턴 체크 (AI 응답 포함해서 20턴이면 종료)
       if (studentTurnCount + 1 >= DEBATE_CONFIG.MAX_TURNS) {
         setEnded(true);
       }
@@ -190,7 +180,6 @@ export default function ChatPanel() {
       console.error("[ChatPanel] Send error:", e);
       const errorMessage = e?.message || "전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
       setError(errorMessage);
-      // 오류 발생 시 입력 내용 복원 및 턴 수 복원
       setInput(messageText);
       setStudentTurnCount((prev) => Math.max(0, prev - 1));
     } finally {
@@ -199,7 +188,6 @@ export default function ChatPanel() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter만 누르면 전송, Shift+Enter는 줄바꿈
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -220,37 +208,8 @@ export default function ChatPanel() {
     }
   };
 
-
-  const inputRef = useRef<HTMLDivElement>(null);
-  const [inputHeight, setInputHeight] = useState(0);
-
-  // Measure input height for dynamic padding
-  useEffect(() => {
-    if (!inputRef.current) return;
-
-    const updateHeight = () => {
-      if (inputRef.current) {
-        setInputHeight(inputRef.current.offsetHeight);
-      }
-    };
-
-    // Initial measure
-    updateHeight();
-
-    // Observer for resize (e.g. textarea expansion)
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(inputRef.current);
-
-    window.addEventListener('resize', updateHeight);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', updateHeight);
-    };
-  }, []);
-
   return (
-    <div className="chat-panel-wrapper" style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: 24, padding: "0 12px", position: "relative" }}>
+    <div className="debate-ai-section">
       {showWaiting && currentTopic && stance && selectedPersonaId && (
         <PersonaWaitingScreen
           personaId={selectedPersonaId}
@@ -258,82 +217,75 @@ export default function ChatPanel() {
           stance={stance}
         />
       )}
-      <section className="debate-card chat-panel" style={{
-        width: "100%",
-        maxWidth: "768px",
-        display: "flex",
-        flexDirection: "column",
-        height: "calc(100dvh - 140px)", // Dynamic height for mobile
-        minHeight: "500px", // Minimum height for desktop
-        position: "relative"
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8, flexShrink: 0 }}>
+      
+      {/* 1. Header Area */}
+      <header className="debate-ai-header">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 12px 0", flexWrap: "wrap", gap: 8 }}>
           <h2 className="debate-section-title" style={{ margin: 0 }}>
             <span className="dot" />
             <span>5단계. AI와 모의 토론</span>
           </h2>
         </div>
 
-        {/* Persona Header */}
-        {selectedPersona && (
-          <div className="persona-header" style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            background: "var(--ms-bg-soft)",
-            padding: "12px 16px",
-            borderRadius: "12px",
-            marginBottom: "12px",
-            border: "2px solid var(--ms-border-subtle)",
-            flexShrink: 0
-          }}>
-            <div style={{ position: "relative", width: "60px", height: "60px", flexShrink: 0 }}>
-              <img
-                src={selectedPersona.image}
-                alt={selectedPersona.name}
-                style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "8px" }}
-              />
-            </div>
-            <div>
-              <div style={{ fontSize: "16px", fontWeight: "bold", color: "var(--ms-primary)" }}>
-                {selectedPersona.name}
+        <div style={{ padding: "12px" }}>
+          {/* Persona Header */}
+          {selectedPersona && (
+            <div className="persona-header" style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              background: "var(--ms-bg-soft)",
+              padding: "12px 16px",
+              borderRadius: "12px",
+              marginBottom: "12px",
+              border: "2px solid var(--ms-border-subtle)"
+            }}>
+              <div style={{ position: "relative", width: "60px", height: "60px", flexShrink: 0 }}>
+                <img
+                  src={selectedPersona.image}
+                  alt={selectedPersona.name}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "8px" }}
+                />
               </div>
-              <div style={{ fontSize: "13px", color: "var(--ms-text-muted)" }}>
-                {selectedPersona.description}
+              <div>
+                <div style={{ fontSize: "16px", fontWeight: "bold", color: "var(--ms-primary)" }}>
+                  {selectedPersona.name}
+                </div>
+                <div style={{ fontSize: "13px", color: "var(--ms-text-muted)" }}>
+                  {selectedPersona.description}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {session && currentTopic && (
-          <div className="debate-topic-header" style={{
-            marginBottom: 12,
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-            background: "var(--ms-bg)",
-            padding: "8px 0",
-            borderBottom: "1px solid var(--ms-border-subtle)",
-            flexShrink: 0
-          }}>
-            <span className="topic-pill">{currentTopic.title}</span>
-            {session.stance && (
-              <span className={`badge-stance ${session.stance}`}>
-                {session.stance === "pro" ? "찬성 입장" : "반대 입장"}
+          {session && currentTopic && (
+            <div className="debate-topic-header" style={{
+              background: "var(--ms-bg)",
+              padding: "8px 0",
+              borderBottom: "1px solid var(--ms-border-subtle)",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap"
+            }}>
+              <span className="topic-pill">{currentTopic.title}</span>
+              {session.stance && (
+                <span className={`badge-stance ${session.stance}`}>
+                  {session.stance === "pro" ? "찬성 입장" : "반대 입장"}
+                </span>
+              )}
+              <span style={{ marginLeft: "auto", fontSize: "14px", fontWeight: "bold", color: "var(--ms-primary)" }}>
+                {studentTurnCount}/{DEBATE_CONFIG.MAX_TURNS}턴
               </span>
-            )}
-            <span style={{ marginLeft: "auto", fontSize: "14px", fontWeight: "bold", color: "var(--ms-primary)" }}>
-              {studentTurnCount}/{DEBATE_CONFIG.MAX_TURNS}턴
-            </span>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
+      </header>
 
-        <div className="chat-messages" style={{
-          flex: 1,
-          overflowY: "auto",
-          minHeight: 0,
-          paddingBottom: inputHeight > 0 ? `${inputHeight + 20}px` : "1rem"
-        }}>
+      {/* 2. Main Content Area (Chat + Input) */}
+      <div className="debate-ai-main">
+        {/* Chat Messages Area */}
+        <div className="debate-ai-messages" ref={messagesContainerRef}>
           {turns.map((t) => (
             <div
               key={t.id}
@@ -357,72 +309,75 @@ export default function ChatPanel() {
               </div>
             </div>
           ))}
+          
           {turns.length === 0 && (
             <p className="hint-text" style={{ textAlign: "center", padding: "2rem" }}>
               먼저 준비한 <strong>주장</strong>이나 <strong>근거</strong> 중 하나를 말해 보세요.
             </p>
           )}
+          
           {isLoading && (
             <p className="hint-text" style={{ textAlign: "center" }}>
               AI가 생각 중... 💭
             </p>
           )}
 
-          {/* Zone B: Student Self Eval (Moved inside chat flow) */}
-          {!isEnded && (
-            <div style={{ marginTop: "16px", marginBottom: "16px" }}>
-              <StudentSelfEvalPanel />
+          {/* Student Self Eval (Moved to page.tsx) */}
+
+          {/* 20턴 도달 안내 */}
+          {isEnded && studentTurnCount >= DEBATE_CONFIG.MAX_TURNS && (
+            <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center" }}>
+              <p className="hint-text" style={{ margin: 0 }}>
+                토론이 {DEBATE_CONFIG.MAX_TURNS}턴에 도달하여 종료되었습니다. 평가를 진행해 주세요.
+              </p>
             </div>
           )}
+
+          {/* 토론 종료 안내 */}
+          {isEnded && (
+            <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center" }}>
+              <p className="hint-text" style={{ margin: 0 }}>
+                {window.innerWidth <= 768 ? UI_TEXT.END_DEBATE_MOBILE : UI_TEXT.END_DEBATE_DESKTOP}
+              </p>
+            </div>
+          )}
+          
+          {/* Invisible element to scroll to */}
+          <div ref={messagesEndRef} />
         </div>
 
-
-
-        {/* Zone C: Fixed Input (Bottom) */}
+        {/* 3. Input Area */}
         {!isEnded && (
-          <div
-            ref={inputRef}
-            className={`chat-input-bar-container ${window.innerWidth <= 480 ? 'chat-input-fixed' : ''}`}
-            style={window.innerWidth > 480 ? { flexShrink: 0, marginTop: "auto" } : {}}
-          >
-
-
-            {/* 턴 수 및 글자 수 표시 */}
+          <div className="debate-ai-input-area">
             <div style={{ marginBottom: 8, fontSize: 12, color: "var(--ms-text-muted)", display: "flex", justifyContent: "space-between" }}>
               <span>{input.length}/{DEBATE_CONFIG.MAX_INPUT_CHARS}자</span>
             </div>
-            <form className="chat-input-bar" onSubmit={handleSend} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            
+            <form onSubmit={handleSend} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <textarea
                 className="chat-textarea"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                onFocus={(e) => {
-                  // Mobile: Scroll into view when focused
-                  if (window.innerWidth <= 640) {
-                    setTimeout(() => {
-                      e.target.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }, 300);
-                  }
-                }}
                 placeholder={UI_TEXT.INPUT_PLACEHOLDER}
                 rows={3}
                 style={{ width: "100%", resize: "none" }}
               />
 
-              {/* 힌트 메시지 (Moved inside form, below textarea) */}
               <div className="input-hint" style={{
                 color: "var(--ms-primary)",
                 fontSize: "0.85rem",
                 fontWeight: "bold",
                 textAlign: "center",
-                padding: "4px 0"
+                padding: "4px 0",
+                marginTop: "12px"
               }}>
                 {turns.length === 0
                   ? "💡 이번에는 [주장]을 명확하게 말해보자!"
                   : "💡 이번에는 [근거]나 [예시]를 들어볼까?"}
               </div>
-              <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+
+              <div className="debate-ai-input-buttons">
                 <button
                   className="btn btn-primary"
                   type="submit"
@@ -453,25 +408,7 @@ export default function ChatPanel() {
             </form>
           </div>
         )}
-
-        {/* 20턴 도달 시 안내 메시지 */}
-        {isEnded && studentTurnCount >= DEBATE_CONFIG.MAX_TURNS && (
-          <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center", flexShrink: 0 }}>
-            <p className="hint-text" style={{ margin: 0 }}>
-              토론이 {DEBATE_CONFIG.MAX_TURNS}턴에 도달하여 종료되었습니다. 평가를 진행해 주세요.
-            </p>
-          </div>
-        )}
-
-        {/* 토론 종료 후: 안내 메시지 */}
-        {isEnded && (
-          <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center", flexShrink: 0 }}>
-            <p className="hint-text" style={{ margin: 0 }}>
-              {window.innerWidth <= 768 ? UI_TEXT.END_DEBATE_MOBILE : UI_TEXT.END_DEBATE_DESKTOP}
-            </p>
-          </div>
-        )}
-      </section>
+      </div>
 
       <SelfReflectionModal
         open={showReflectionModal}
