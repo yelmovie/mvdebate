@@ -40,7 +40,7 @@ export default function ChatPanel() {
 
   const [input, setInput] = useState("");
   // const [isEnded, setIsEnded] = useState(false); // Removed local state
-  
+
   // 20턴 강제 종료를 위한 턴 카운트 (학생 발화 기준)
   const [studentTurnCount, setStudentTurnCount] = useState(0);
   const MAX_TURNS = 20;
@@ -108,7 +108,7 @@ export default function ChatPanel() {
     if (e) {
       e.preventDefault();
     }
-    
+
     if (!input.trim()) return;
 
     if (input.length > DEBATE_CONFIG.MAX_INPUT_CHARS) {
@@ -122,7 +122,7 @@ export default function ChatPanel() {
     }
 
     if (isLoading) return; // Assuming 'isSending' in the instruction refers to 'isLoading' from the store
-    
+
     // 20턴 체크: 다음 턴이 20턴이면 여기서 종료
     if (studentTurnCount + 1 >= DEBATE_CONFIG.MAX_TURNS) {
       setEnded(true);
@@ -130,13 +130,13 @@ export default function ChatPanel() {
       // SummaryPanel의 handleEndDebate를 트리거하기 위해 상태만 변경
       return;
     }
-    
+
     const messageText = input.trim();
     setInput(""); // 입력창 먼저 비우기 (UX 개선)
-    
+
     // 학생 턴 수 증가
     setStudentTurnCount((prev) => prev + 1);
-    
+
     try {
       setLoading(true);
       setError(undefined);
@@ -146,7 +146,7 @@ export default function ChatPanel() {
       const currentTurnCount = turns.length + 1;
       const turnIndex = currentTurnCount; // 이번 AI 응답의 턴 번호
       const maxTurns = DEBATE_CONFIG.MAX_TURNS;
-      
+
       // phase 계산
       let phase: "normal" | "closing-warning" | "closing-final" = "normal";
       if (turnIndex >= maxTurns - 2 && turnIndex < maxTurns) {
@@ -181,7 +181,7 @@ export default function ChatPanel() {
         addTurn(res.aiTurn);
         setStructureFromLabel(res.aiTurn.label, res.turn.text);
       }
-      
+
       // AI 응답 후에도 20턴 체크 (AI 응답 포함해서 20턴이면 종료)
       if (studentTurnCount + 1 >= DEBATE_CONFIG.MAX_TURNS) {
         setEnded(true);
@@ -227,7 +227,7 @@ export default function ChatPanel() {
   // Measure input height for dynamic padding
   useEffect(() => {
     if (!inputRef.current) return;
-    
+
     const updateHeight = () => {
       if (inputRef.current) {
         setInputHeight(inputRef.current.offsetHeight);
@@ -258,10 +258,10 @@ export default function ChatPanel() {
           stance={stance}
         />
       )}
-      <section className="debate-card chat-panel" style={{ 
-        width: "100%", 
-        maxWidth: "768px", 
-        display: "flex", 
+      <section className="debate-card chat-panel" style={{
+        width: "100%",
+        maxWidth: "768px",
+        display: "flex",
         flexDirection: "column",
         height: "calc(100dvh - 140px)", // Dynamic height for mobile
         minHeight: "500px", // Minimum height for desktop
@@ -276,20 +276,20 @@ export default function ChatPanel() {
 
         {/* Persona Header */}
         {selectedPersona && (
-          <div className="persona-header" style={{ 
-            display: "flex", 
-            alignItems: "center", 
-            gap: "12px", 
-            background: "var(--ms-bg-soft)", 
-            padding: "12px 16px", 
-            borderRadius: "12px", 
+          <div className="persona-header" style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            background: "var(--ms-bg-soft)",
+            padding: "12px 16px",
+            borderRadius: "12px",
             marginBottom: "12px",
             border: "2px solid var(--ms-border-subtle)",
             flexShrink: 0
           }}>
             <div style={{ position: "relative", width: "60px", height: "60px", flexShrink: 0 }}>
-              <img 
-                src={selectedPersona.image} 
+              <img
+                src={selectedPersona.image}
                 alt={selectedPersona.name}
                 style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "8px" }}
               />
@@ -306,13 +306,13 @@ export default function ChatPanel() {
         )}
 
         {session && currentTopic && (
-          <div className="debate-topic-header" style={{ 
-            marginBottom: 12, 
-            position: "sticky", 
-            top: 0, 
-            zIndex: 10, 
-            background: "var(--ms-bg)", 
-            padding: "8px 0", 
+          <div className="debate-topic-header" style={{
+            marginBottom: 12,
+            position: "sticky",
+            top: 0,
+            zIndex: 10,
+            background: "var(--ms-bg)",
+            padding: "8px 0",
             borderBottom: "1px solid var(--ms-border-subtle)",
             flexShrink: 0
           }}>
@@ -328,11 +328,11 @@ export default function ChatPanel() {
           </div>
         )}
 
-        <div className="chat-messages" style={{ 
-          flex: 1, 
-          overflowY: "auto", 
-          minHeight: 0, 
-          paddingBottom: inputHeight > 0 ? `${inputHeight + 20}px` : "1rem" 
+        <div className="chat-messages" style={{
+          flex: 1,
+          overflowY: "auto",
+          minHeight: 0,
+          paddingBottom: inputHeight > 0 ? `${inputHeight + 20}px` : "1rem"
         }}>
           {turns.map((t) => (
             <div
@@ -367,28 +367,25 @@ export default function ChatPanel() {
               AI가 생각 중... 💭
             </p>
           )}
+
+          {/* Zone B: Student Self Eval (Moved inside chat flow) */}
+          {!isEnded && (
+            <div style={{ marginTop: "16px", marginBottom: "16px" }}>
+              <StudentSelfEvalPanel />
+            </div>
+          )}
         </div>
-        
-        {/* Zone B: Student Self Eval (Between Chat and Input) */}
-        {!isEnded && (
-          <div style={{ flexShrink: 0, marginBottom: inputHeight > 0 ? `${inputHeight}px` : "16px" }}>
-            <StudentSelfEvalPanel />
-          </div>
-        )}
+
+
 
         {/* Zone C: Fixed Input (Bottom) */}
         {!isEnded && (
-          <div 
+          <div
             ref={inputRef}
             className={`chat-input-bar-container ${window.innerWidth <= 480 ? 'chat-input-fixed' : ''}`}
             style={window.innerWidth > 480 ? { flexShrink: 0, marginTop: "auto" } : {}}
           >
-            {/* 힌트 메시지 (Moved inside fixed container) */}
-            <div className="input-hint" style={{ marginBottom: "8px", color: "var(--ms-primary)", fontSize: "0.9rem", fontWeight: "bold", textAlign: "center" }}>
-              {turns.length === 0 
-                ? "💡 이번에는 [주장]을 명확하게 말해보자!" 
-                : "💡 이번에는 [근거]나 [예시]를 들어볼까?"}
-            </div>
+
 
             {/* 턴 수 및 글자 수 표시 */}
             <div style={{ marginBottom: 8, fontSize: 12, color: "var(--ms-text-muted)", display: "flex", justifyContent: "space-between" }}>
@@ -412,6 +409,19 @@ export default function ChatPanel() {
                 rows={3}
                 style={{ width: "100%", resize: "none" }}
               />
+
+              {/* 힌트 메시지 (Moved inside form, below textarea) */}
+              <div className="input-hint" style={{
+                color: "var(--ms-primary)",
+                fontSize: "0.85rem",
+                fontWeight: "bold",
+                textAlign: "center",
+                padding: "4px 0"
+              }}>
+                {turns.length === 0
+                  ? "💡 이번에는 [주장]을 명확하게 말해보자!"
+                  : "💡 이번에는 [근거]나 [예시]를 들어볼까?"}
+              </div>
               <div style={{ display: "flex", gap: "8px", width: "100%" }}>
                 <button
                   className="btn btn-primary"
@@ -443,7 +453,7 @@ export default function ChatPanel() {
             </form>
           </div>
         )}
-        
+
         {/* 20턴 도달 시 안내 메시지 */}
         {isEnded && studentTurnCount >= DEBATE_CONFIG.MAX_TURNS && (
           <div style={{ marginTop: 16, padding: 12, backgroundColor: "var(--ms-card-soft)", borderRadius: 8, textAlign: "center", flexShrink: 0 }}>
@@ -463,10 +473,10 @@ export default function ChatPanel() {
         )}
       </section>
 
-      <SelfReflectionModal 
-        open={showReflectionModal} 
-        onClose={() => setShowReflectionModal(false)} 
-        onSave={handleReflectionSave} 
+      <SelfReflectionModal
+        open={showReflectionModal}
+        onClose={() => setShowReflectionModal(false)}
+        onSave={handleReflectionSave}
       />
     </div>
   );
