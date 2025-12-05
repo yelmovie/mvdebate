@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-import { containsBadWords } from "../../utils/filterUtils";
+import { containsBadWords, checkContentSafety } from "../../utils/filterUtils";
 
 interface Suggestion {
   id: string;
@@ -59,9 +59,24 @@ export default function SuggestionModal({ open, onClose }: Props) {
       }
     }
 
-    if (containsBadWords(contactEmail) || containsBadWords(content)) {
-      alert("비속어, 욕설, 성적 표현이 포함되어 있습니다. 바르고 고운 말을 사용해주세요.");
-      return;
+    // Safety Check (Async)
+    try {
+      if (contactEmail.trim()) {
+        const emailSafety = await checkContentSafety(contactEmail);
+        if (!emailSafety.allowed) {
+          alert("이메일에 부적절한 단어가 포함되어 있습니다.");
+          return;
+        }
+      }
+
+      const contentSafety = await checkContentSafety(content);
+      if (!contentSafety.allowed) {
+        alert(contentSafety.feedbackForStudent || "내용에 비속어나 부적절한 단어가 포함되어 있습니다.");
+        return;
+      }
+    } catch (error) {
+      console.error("Safety check failed:", error);
+      // Fail-open or handle error
     }
 
     try {

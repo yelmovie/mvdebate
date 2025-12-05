@@ -19,9 +19,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!topicId || typeof topicId !== "number") {
+    if (!topicId || typeof topicId !== "string") {
       return NextResponse.json(
-        { error: "topicId is required and must be a number" },
+        { error: "topicId is required and must be a string" },
         { status: 400 }
       );
     }
@@ -33,11 +33,21 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    if (!difficulty || (difficulty !== "easy" && difficulty !== "hard")) {
-      return NextResponse.json(
-        { error: "difficulty is required and must be 'easy' or 'hard'" },
-        { status: 400 }
-      );
+    if (!difficulty || (difficulty !== "low" && difficulty !== "mid" && difficulty !== "high")) {
+      // For backward compatibility or safety, if 'easy' comes in, map to 'low', 'hard' to 'high'?
+      // But purely strictly:
+      // Allow legacy "easy"/"hard" just in case? No, assume we fix frontend.
+      // But let's be safe:
+      if (difficulty === "easy") body.difficulty = "low";
+      if (difficulty === "hard") body.difficulty = "high";
+      
+      const d = body.difficulty;
+      if (d !== "low" && d !== "mid" && d !== "high") {
+         return NextResponse.json(
+          { error: "difficulty is required and must be 'low', 'mid', or 'high'" },
+          { status: 400 }
+        );
+      }
     }
 
     // Create session
@@ -46,6 +56,7 @@ export async function POST(req: NextRequest) {
       userId,
       topicId,
       stance,
+      aiStance: stance === "pro" ? "con" : "pro",
       difficulty,
       createdAt: new Date().toISOString()
     };

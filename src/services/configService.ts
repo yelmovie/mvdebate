@@ -1,26 +1,27 @@
-import topicsJson from "../config/topics.json";
+import { DEBATE_TOPICS } from "../data/debateTopics";
 import systemPrompts from "../config/systemPrompt.json";
 import rubricsData from "../config/rubrics.json";
 import { PERSONAS } from "../config/personas";
 import appSettingsJson from "../config/appSettings.json";
 import type { Topic, Rubric } from "../types/domain";
 
-
-
 export function getTopics(): Topic[] {
-  return topicsJson as Topic[];
+  return DEBATE_TOPICS;
 }
 
 export function getSystemPrompt(options?: {
-  promptType?: "debate_coach" | "debate_battle_prompt";
+  promptType?: "debate_coach" | "debate_battle_prompt" | "speech_review_helper";
   topic?: string;
   stance?: "pro" | "con";
   turnCount?: number;
   turnIndex?: number;
   maxTurns?: number;
   phase?: "normal" | "closing-warning" | "closing-final";
-  difficulty?: "easy" | "hard";
+  difficulty?: "low" | "mid" | "high";
   personaId?: string;
+  aiStance?: "pro" | "con";
+  level?: "High" | "Mid" | "Low";
+  grade?: string;
 }): string {
   const promptType = options?.promptType || "debate_battle_prompt";
   
@@ -44,21 +45,33 @@ export function getSystemPrompt(options?: {
   
   let prompt = selectedPrompt.content.join("\n");
   
-  // 치환 변수 처리
+  // 2. 변수 치환
   if (options) {
-    const { topic, stance, turnIndex, maxTurns, phase, personaId } = options;
-    
-    // topic 치환
-    if (topic) {
-      prompt = prompt.replace(/\{\{topic\}\}/g, topic);
+    const { topic, stance, aiStance, turnCount, turnIndex, maxTurns, phase, difficulty, personaId, level, grade } = options;
+
+    if (topic) prompt = prompt.replace(/\{\{topic\}\}/g, topic);
+
+    // 난이도(difficulty)를 level로 매핑
+    let effectLevel = level || "Low";
+    if (!level && difficulty) {
+       switch (difficulty) {
+           case "high": effectLevel = "High"; break;
+           case "mid": effectLevel = "Mid"; break;
+           case "low": default: effectLevel = "Low"; break;
+       }
     }
-    
-    // stance 치환 (pro -> 찬성, con -> 반대)
+
+    prompt = prompt.replace(/\{\{level\}\}/g, effectLevel);
+    prompt = prompt.replace(/\{\{grade\}\}/g, grade || "초등 4학년");
+
     if (stance) {
       const stanceText = stance === "pro" ? "찬성" : "반대";
-      const aiStanceText = stance === "pro" ? "반대" : "찬성"; // AI는 학생과 반대 입장
+      // aiStance가 명시적으로 있으면 그것을 쓰고, 없으면 학생 반대로
+      const aiStanceText = aiStance 
+        ? (aiStance === "pro" ? "찬성" : "반대")
+        : (stance === "pro" ? "반대" : "찬성");
       
-      // debate_coach는 {{stance}}만 사용
+      // debate_coach는 {{stance}}만 사용 (학생 입장 위주)
       prompt = prompt.replace(/\{\{stance\}\}/g, stanceText);
       
       // debate_battle_prompt는 {{studentStance}}와 {{aiStance}} 사용
@@ -77,47 +90,9 @@ export function getSystemPrompt(options?: {
       prompt = prompt.replace(/\{\{phase\}\}/g, phase);
     }
 
-    // 난이도별 어조 및 어휘 조정
-    if (options.difficulty === "easy") {
-      prompt += `
-      
-
-[IMPORTANT INSTRUCTION FOR ELEMENTARY SCHOOL DEBATE]
-You are a debate partner for a 5th-grade elementary school student.
-Your goal is to help them practice logic, not to win the debate.
-
-STRICT RULES:
-1. **Summarize**: Briefly acknowledge what the student said. (e.g., "So you think [claim] because [reason].")
-2. **Stance**: Clearly state your stance ("I agree" or "I disagree") based on your role.
-3. **Reasons**: Provide EXACTLY 1 or 2 reasons. No more.
-4. **Vocabulary**: Use VERY SIMPLE words. NO difficult academic terms. Speak like a friendly classmate.
-5. **Question**: ALWAYS end with a question to encourage the student to reply. (e.g., "What do you think about this?", "Do you have another reason?")
-
-RESPONSE STYLE:
-- **Speak Naturally**: Do NOT use tags like [학생 말 요약], [나의 입장], [근거].
-- **Conversational Tone**: Speak as if you are chatting with a friend (Banmal/Casual).
-- **Flow**: Mix the summary, stance, and reason into a natural paragraph.
-
-Example of a good response:
-"아, 너는 떡볶이가 매워서 학생들이 아플 수 있다고 생각하는구나. (Summary)
-하지만 내 생각은 좀 달라. (Stance)
-매운맛도 급식의 즐거움 중 하나라고 생각하거든. 아이들이 좋아하는 메뉴를 무조건 없애는 건 좋지 않아. (Reason)
-너는 어떻게 생각해? (Question)"
-
-TONE: Friendly, encouraging, and polite (Banmal/Casual).
-`;
-    } else if (options.difficulty === "hard") {
-      prompt += `
-      
-[IMPORTANT INSTRUCTION FOR HARD MODE]
-- The user is a middle/high school student.
-- Use formal and academic vocabulary appropriate for debate.
-- Be critical and logical. Challenge the user's logic sharply.
-- Point out logical fallacies if any.
-- Expect high-quality arguments from the user.
-`;
-    }
-
+    // [변경] 기존 하드코딩된 난이도별 프롬프트 추가 로직 제거
+    // 이유: systemPrompt.json 내부의 [Difficulty System]이 이를 대체함.
+    
     // Persona Injection (Apply regardless of difficulty)
     if (personaId) {
       const persona = PERSONAS.find(p => p.id === personaId);

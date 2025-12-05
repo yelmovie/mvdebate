@@ -91,3 +91,19 @@ select {
 
 
 
+
+/* Chat Textarea Styles */
+.chat-textarea {
+  width: 100%;
+  resize: none;
+  overflow-y: auto;
+  min-height: 80px; /* Desktop default 2-3 lines */
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .chat-textarea {
+    min-height: auto;
+    overflow-y: hidden; /* Hide scrollbar for auto-grow */
+  }
+}

@@ -6,11 +6,13 @@ interface DebateState {
   nickname?: string;
   currentTopic?: Topic;
   stance?: "pro" | "con";
+  aiStance?: "pro" | "con"; // Added aiStance
   session?: DebateSession;
   turns: DebateTurn[];
   isLoading: boolean;
   isEnded: boolean;
   evaluation?: AiEvaluation;
+  difficulty?: "low" | "mid" | "high"; // Added difficulty state
   error?: string;
   selectedPersonaId?: string; // Added persona state
 
@@ -25,7 +27,8 @@ interface DebateState {
   setUser: (id: string, nickname: string) => void;
   setTopic: (topic: Topic) => void;
   setStance: (stance: "pro" | "con") => void;
-  setPersonaId: (id: string) => void; // Added persona action
+  setPersonaId: (id: string) => void;
+  setDifficulty: (difficulty: "low" | "mid" | "high") => void; // Added difficulty action
   startSession: (session: DebateSession) => void;
   addTurn: (turn: DebateTurn) => void;
   setStructureFromLabel: (label: DebateLabel, text: string) => void;
@@ -47,7 +50,8 @@ export const useDebateStore = create<DebateState>((set) => ({
   setTopic: (topic) => set({ currentTopic: topic }),
   setStance: (stance) => set({ stance }),
   setPersonaId: (id) => set({ selectedPersonaId: id }),
-  startSession: (session) => set({ session, turns: [] }),
+  setDifficulty: (difficulty) => set({ difficulty }),
+  startSession: (session) => set({ session, aiStance: session.aiStance, turns: [] }),
   addTurn: (turn) =>
     set((state) => ({ turns: [...state.turns, turn] })),
   setStructureFromLabel: (label, text) =>
@@ -87,6 +91,7 @@ export const useDebateStore = create<DebateState>((set) => ({
       isEnded: false,
       evaluation: undefined,
       error: undefined,
-      selectedPersonaId: undefined
+      selectedPersonaId: undefined,
+      difficulty: undefined
     })
 }));

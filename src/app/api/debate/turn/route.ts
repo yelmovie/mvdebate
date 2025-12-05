@@ -13,7 +13,7 @@ import type { DebateTurn, DebateLabel } from "../../../../types/domain";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sessionId, text, topicTitle, stance, difficulty, turnCount, turnIndex, maxTurns, phase, history, personaId } = body;
+    const { sessionId, text, topicTitle, stance, aiStance, difficulty, turnCount, turnIndex, maxTurns, phase, history, personaId } = body;
 
     if (!sessionId || !text || typeof text !== "string" || text.trim().length === 0) {
       return NextResponse.json(
@@ -41,8 +41,9 @@ export async function POST(request: NextRequest) {
         turnIndex: typeof turnIndex === "number" ? turnIndex : undefined,
         maxTurns: typeof maxTurns === "number" ? maxTurns : undefined,
         phase: phase as "normal" | "closing-warning" | "closing-final" | undefined,
-        difficulty: difficulty as "easy" | "hard" | undefined,
-        personaId: personaId as string | undefined
+        difficulty: difficulty as "low" | "mid" | "high" | undefined,
+        personaId: personaId as string | undefined,
+        aiStance: aiStance as "pro" | "con" | undefined // Pass AI stance to config service
       });
 
       // Construct user message with context (if provided)

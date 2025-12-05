@@ -13,7 +13,7 @@ export interface User {
 }
 
 export interface Topic {
-  id: number;
+  id: string; // Changed from number to string for custom topics
   title: string;
   category: string;
   difficulty: number;
@@ -31,13 +31,14 @@ export type DebateLabel =
 export interface DebateSession {
   id: string;
   userId: string;
-  topicId: number;
+  topicId: string;
   stance: "pro" | "con";
-  difficulty: "easy" | "hard";
+  difficulty: "low" | "mid" | "high";
   createdAt: string;
   finishedAt?: string;
   summary?: string;
   personaId?: string; // Added for Persona feature
+  aiStance?: "pro" | "con"; // AI 입장 (학생과 반대)
 }
 
 /** 루브릭 점수 한 칸 */

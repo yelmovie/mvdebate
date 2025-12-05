@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import GuideModal from "../components/common/GuideModal";
+import LoginModal from "../components/common/LoginModal";
 import { getTopics } from "../services/configService";
 
 export default function HomePage() {
@@ -13,6 +14,7 @@ export default function HomePage() {
   const [mode, setMode] = useState<"random" | "manual">("random");
   const [topicId, setTopicId] = useState<number>(1);
   const [showGuide, setShowGuide] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     // Check if guide should be hidden
@@ -25,10 +27,22 @@ export default function HomePage() {
     const savedNickname = localStorage.getItem("studentNickname");
     const savedGrade = localStorage.getItem("studentGrade");
     const savedClass = localStorage.getItem("studentClass");
-    if (savedNickname) setNickname(savedNickname);
+    
+    if (savedNickname) {
+      setNickname(savedNickname);
+    } else {
+      // If no nickname saved, show login modal
+      setShowLoginModal(true);
+    }
+
     if (savedGrade) setGrade(savedGrade);
     if (savedClass) setClassNumber(savedClass);
   }, []);
+
+  const handleLoginSuccess = (name: string) => {
+    setNickname(name);
+    setShowLoginModal(false);
+  };
 
   const topics = getTopics();
   const easyTopics = topics.filter(t => t.difficulty === 1);
@@ -90,6 +104,8 @@ export default function HomePage() {
                 onChange={(e) => setNickname(e.target.value)}
                 placeholder="예: 김철수"
                 className="filter-input"
+                readOnly // Prevent manual editing if logged in via modal
+                onClick={() => setShowLoginModal(true)} // Allow re-opening modal
               />
             </label>
             <label style={{ fontSize: 15, fontWeight: 500, display: "flex", flexDirection: "column", gap: "8px", width: "80px" }}>
@@ -181,6 +197,12 @@ export default function HomePage() {
       </section>
 
       <GuideModal open={showGuide} onClose={() => setShowGuide(false)} />
+      
+      <LoginModal 
+        open={showLoginModal} 
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
     </main>
   );
 }

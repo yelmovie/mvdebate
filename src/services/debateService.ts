@@ -13,9 +13,9 @@ import type { DebateSession, DebateTurn } from "../types/domain";
  */
 export async function createSession(payload: {
   userId: string;
-  topicId: number;
+  topicId: string;
   stance: "pro" | "con";
-  difficulty: "easy" | "hard";
+  difficulty: "low" | "mid" | "high";
   personaId?: string;
 }): Promise<DebateSession> {
   return apiFetch<DebateSession>("/api/debate/session", {
@@ -45,13 +45,15 @@ export async function sendTurn({
   maxTurns,
   phase,
   history,
-  personaId
+  personaId,
+  aiStance
 }: {
   sessionId: string;
   text: string;
   topicTitle?: string;
   stance?: "pro" | "con";
-  difficulty?: "easy" | "hard";
+  aiStance?: "pro" | "con";
+  difficulty?: "low" | "mid" | "high";
   turnCount?: number;
   turnIndex?: number;
   maxTurns?: number;
@@ -68,7 +70,7 @@ export async function sendTurn({
     aiTurn?: DebateTurn;
   }>("/api/debate/turn", {
     method: "POST",
-    body: JSON.stringify({ sessionId, text, topicTitle, stance, difficulty, turnCount, turnIndex, maxTurns, phase, history, personaId })
+    body: JSON.stringify({ sessionId, text, topicTitle, stance, aiStance, difficulty, turnCount, turnIndex, maxTurns, phase, history, personaId })
   });
 
   // Client-side safety filter: Remove (※ ...) and (Student: ...) patterns

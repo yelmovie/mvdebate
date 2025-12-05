@@ -5,7 +5,7 @@ import { useDebateStore } from "../../store/debateStore";
 import { sendTurn } from "../../services/debateService";
 import { saveSessionToHistory } from "../../services/historyService";
 import type { DebateSessionReport } from "../../types/domain";
-import { containsBadWords } from "../../utils/filterUtils";
+import { containsBadWords, checkContentSafety } from "../../utils/filterUtils";
 import { getLabelName } from "../../utils/labelClassifier";
 import SelfReflectionModal from "./SelfReflectionModal";
 import { PERSONAS } from "../../config/personas";
@@ -30,7 +30,8 @@ export default function ChatPanel() {
     claim,
     reasons,
     evidences,
-    selectedPersonaId
+    selectedPersonaId,
+    aiStance // Added aiStance
   } = useDebateStore();
 
   const selectedPersona = PERSONAS.find(p => p.id === selectedPersonaId);
@@ -43,6 +44,7 @@ export default function ChatPanel() {
   // Ref for auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-scroll to bottom when turns change
   useEffect(() => {
@@ -75,6 +77,32 @@ export default function ChatPanel() {
       setShowReflectionModal(true);
     }
   }, [isEnded]);
+
+  // Auto-grow textarea functionality
+  useEffect(() => {
+    if (textareaRef.current) {
+      // Reset height to auto to correctly calculate new scrollHeight
+      textareaRef.current.style.height = "auto";
+      
+      // On desktop (width > 768px), we might want to keep it fixed or limited
+      // But user requested: 
+      // - Mobile: auto-growing
+      // - Desktop: 2-3 lines default (but can grow? User said "2~3줄 기본 높이", implies fixed or min-height)
+      // Actually usually auto-grow is good for both, but maybe limit max height.
+      // Let's implement a responsive check or just general auto-grow with max-height.
+      
+      const isMobile = window.innerWidth <= 768;
+      
+      if (isMobile) {
+        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      } else {
+        // Desktop: Fixed height (or just reset to default rows height which is roughly handled by rows=3)
+        // User asked "Desktop: 2~3줄 기본 높이", so we effectively disable auto-grow or keep it minimal.
+        // If we simply don't set style.height, it respects 'rows={3}' (approx 3 lines).
+        textareaRef.current.style.height = "auto"; // fallback to rows
+      }
+    }
+  }, [input]);
 
   const handleReflectionSave = (reflection: { myClaim: string; aiCounterpoint: string; improvement: string }) => {
     if (!session) return;
@@ -113,13 +141,21 @@ export default function ChatPanel() {
     if (!input.trim()) return;
 
     if (input.length > DEBATE_CONFIG.MAX_INPUT_CHARS) {
-      alert(`한 번에 ${DEBATE_CONFIG.MAX_INPUT_CHARS}자까지만 쓸 수 있어요.\n핵심만 간단히 적어보자!`);
+      alert(`최대 ${DEBATE_CONFIG.MAX_INPUT_CHARS}자까지 입력할 수 있어요.`);
       return;
     }
 
-    if (containsBadWords(input)) {
-      alert("비속어나 부적절한 단어가 포함되어 있습니다.\n바르고 고운 말을 사용해주세요.");
-      return;
+    // Safety Check (Async)
+    try {
+      const safetyResult = await checkContentSafety(input);
+      if (!safetyResult.allowed) {
+        alert(safetyResult.feedbackForStudent || "비속어나 부적절한 단어가 포함되어 있습니다.\n바르고 고운 말을 사용해주세요.");
+        return;
+      }
+    } catch (error) {
+      console.error("Safety check failed:", error);
+      // In case of error, we default to allowing (fail-open) or maybe a simple local check
+      // For now, let's just proceed to avoid blocking the user due to server error
     }
 
     if (isLoading) return;
@@ -164,7 +200,8 @@ export default function ChatPanel() {
         maxTurns,
         phase,
         history,
-        personaId: selectedPersonaId
+        personaId: selectedPersonaId,
+        aiStance: aiStance // Pass explicit AI stance
       });
 
       addTurn(res.turn);
@@ -271,7 +308,13 @@ export default function ChatPanel() {
               <span className="topic-pill">{currentTopic.title}</span>
               {session.stance && (
                 <span className={`badge-stance ${session.stance}`}>
-                  {session.stance === "pro" ? "찬성 입장" : "반대 입장"}
+                  {session.stance === "pro" ? "나: 찬성" : "나: 반대"}
+                </span>
+              )}
+              {/* AI Stance Badge */}
+              {aiStance && (
+                <span className={`badge-stance ${aiStance}`} style={{ opacity: 0.9 }}>
+                  AI: {aiStance === "pro" ? "찬성" : "반대"}
                 </span>
               )}
               <span style={{ marginLeft: "auto", fontSize: "14px", fontWeight: "bold", color: "var(--ms-primary)" }}>
@@ -355,13 +398,18 @@ export default function ChatPanel() {
             
             <form onSubmit={handleSend} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <textarea
+                ref={textareaRef}
                 className="chat-textarea"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={UI_TEXT.INPUT_PLACEHOLDER}
+                maxLength={DEBATE_CONFIG.MAX_INPUT_CHARS}
                 rows={3}
-                style={{ width: "100%", resize: "none" }}
+                style={{ 
+                  width: "100%", 
+                  resize: "none"
+                }}
               />
 
               <div className="input-hint" style={{

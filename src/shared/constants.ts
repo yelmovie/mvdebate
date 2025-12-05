@@ -5,7 +5,7 @@
 
 export const DEBATE_CONFIG = {
   MAX_TURNS: 20,
-  MAX_INPUT_CHARS: 100,
+  MAX_INPUT_CHARS: 500,
   WARNING_TURNS: 18, // Warn user when approaching max turns
 };
 
