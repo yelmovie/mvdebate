@@ -1,0 +1,88 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- Helper Functions ---
+    function isTeacher() {
+      // Allow any authenticated user (including anonymous) during trial
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    // --- Teachers ---
+    match /teachers/{teacherId} {
+      // Teachers can read/write their own profile
+      allow get: if isOwner(teacherId); // Public read might be needed for class verification? No, server does that.
+      allow write: if isOwner(teacherId);
+    }
+
+    // --- Classes ---
+    match /classes/{classCode} {
+      // Anyone can read class info (to check if valid code)
+      // But maybe restrict detailed info? For now, open read for students joining.
+      allow read: if true; 
+      
+      // Only the teacher who owns it can update (checked via field or teacher doc link)
+      // For simplicity in this ruleset, we allow create/update if authenticated as teacher
+      allow write: if isTeacher();
+    }
+
+    // --- Dashboard Summaries ---
+    match /dashboard_summaries/{classCode} {
+      // Teachers of the class (or just any teacher for MVP simplicity) can read
+      allow read: if isTeacher();
+      // Only managed logic should write, but generally teachers or server.
+      allow write: if isTeacher(); 
+    }
+
+    // --- Daily Usage (Cost Safety) ---
+    match /daily_usage/{docId} {
+      // API Route uses Client SDK, so we must allow write. 
+      // Ideally this should be server-side only (Admin SDK).
+      allow read: if true;
+      allow write: if true; // Allowed for API limits (Fail Open strategy)
+    }
+
+    // --- Notices & Schedules ---
+    match /notices/{noticeId} {
+        allow read: if true; // Students need to see notices
+        // Strict: Only the teacher who authored it can write
+        allow write: if request.auth != null && request.resource.data.teacherId == request.auth.uid;
+        // Also allow delete/update if existing resource matches
+        allow update, delete: if request.auth != null && resource.data.teacherId == request.auth.uid;
+    }
+    
+    match /schedules/{scheduleId} {
+        allow read: if true; // Students need to see schedules
+        // Strict: Only the teacher who owns it can write
+        allow write: if request.auth != null && request.resource.data.teacherId == request.auth.uid;
+        allow update, delete: if request.auth != null && resource.data.teacherId == request.auth.uid;
+    }
+
+    // --- Reports ---
+    match /reports/{reportId} {
+        allow read: if isTeacher(); // Only teacher sees reports
+        allow create: if true; // Students (or AI service) create reports 
+        allow update: if isTeacher(); // Only teacher updates status
+    }
+    
+    // --- Students & Debate Logs ---
+    match /students/{studentId} {
+      allow read, write: if true; // Open for unauthenticated students (Trade-off)
+    }
+
+    match /debateLogs/{logId} {
+      allow read, write: if true; // Open for unauthenticated students
+    }
+
+    // --- Suggestions ---
+    match /suggestions/{suggestionId} {
+      allow create: if true;
+      allow read, write: if isTeacher();
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { CommonIcons } from "../../lib/icons";
 
 export default function QrPopup() {
   const [open, setOpen] = useState(false);
@@ -13,20 +14,15 @@ export default function QrPopup() {
 
   return (
     <>
-      {/* 상단에 표시되는 작은 QR */}
-      <div 
-        className="qr-popup-trigger"
+      {/* 상단에 표시되는 작은 QR 트리거 */}
+      <button 
+        type="button"
         onClick={() => setOpen(true)}
-        title="모바일 접속 QR"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow transition hover:opacity-90"
+        title="QR 접속"
       >
-        <img
-          src="/images/qr/qr_code.png"
-          alt="QR Code"
-          width={40}
-          height={40}
-          style={{ borderRadius: "8px", border: "2px solid var(--ms-border-subtle)", objectFit: "contain" }}
-        />
-      </div>
+        <CommonIcons.QrCode size={18} color="#ffffff" />
+      </button>
 
       {/* 팝업 (Portal 사용) */}
       {open && mounted && createPortal(
@@ -48,7 +44,10 @@ export default function QrPopup() {
               gap: "20px"
             }}
           >
-            <h2 className="modal-title" style={{ fontSize: "24px" }}>📱 모바일 접속</h2>
+            <h2 className="modal-title" style={{ fontSize: "24px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <CommonIcons.Smartphone size={24} color="#C084FC" />
+              모바일 접속
+            </h2>
             
             <div style={{ 
               padding: "20px", 

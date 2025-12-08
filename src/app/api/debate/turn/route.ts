@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendDebateMessage, parseAIResponse, UpstageMessage } from "../../../../services/ai/upstageClient";
 import { getSystemPrompt } from "../../../../services/configService";
 import type { DebateTurn, DebateLabel } from "../../../../types/domain";
+import { fileStore } from "../../../../lib/fileStore";
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,6 +74,27 @@ export async function POST(request: NextRequest) {
         label: (parsed.label as DebateLabel) || "other",
         timestamp: new Date().toISOString()
       };
+
+      // Update Teacher Dashboard (File Store)
+      try {
+        const session = fileStore.getSession(sessionId);
+        if (session && session.nickname) {
+           const match = session.nickname.match(/^(\d+)번/);
+           if (match) {
+               const studentNum = parseInt(match[1]);
+               // We only update if we found valid student num
+               if (!isNaN(studentNum)) {
+                   fileStore.updateStatus(studentNum, {
+                       turnCount: (turnCount || 0) + 1, // rough estimate
+                       topic: topicTitle || session.topicId,
+                       lastActive: new Date().toISOString()
+                   });
+               }
+           }
+        }
+      } catch (e) {
+          // ignore file store errors
+      }
 
       return NextResponse.json({
         turn: studentTurn,

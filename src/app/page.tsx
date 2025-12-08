@@ -1,208 +1,160 @@
+// src/app/page.tsx
 "use client";
 
+import { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import GuideModal from "../components/common/GuideModal";
-import LoginModal from "../components/common/LoginModal";
-import { getTopics } from "../services/configService";
+import StudentEntryForm from "../components/student/StudentEntryForm";
+import TeacherLoginCard from "../components/teacher/TeacherLoginCard";
+import { StudentIcons, TeacherIcons, CommonIcons, iconStyles } from "../lib/icons";
 
-export default function HomePage() {
+// --- Tab Button Component ---
+function TabButton({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ComponentType<{ size?: number; color?: string; className?: string }>;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-base font-medium
+        ${
+          active
+            ? "bg-white/20 text-white shadow-lg"
+            : "text-white/60 hover:text-white hover:bg-white/10"
+        }
+      `}
+    >
+      <Icon 
+        size={24} 
+        color={iconStyles.color.primary}
+        className="transition-all duration-200 hover:scale-105"
+      />
+      {label}
+    </button>
+  );
+}
+
+// --- Main Page ---
+export default function Home() {
+  const {
+    user,
+    userRole,
+    loading,
+    logout,
+  } = useAuth();
   const router = useRouter();
-  const [nickname, setNickname] = useState("");
-  const [grade, setGrade] = useState("");
-  const [classNumber, setClassNumber] = useState("");
-  const [mode, setMode] = useState<"random" | "manual">("random");
-  const [topicId, setTopicId] = useState<number>(1);
-  const [showGuide, setShowGuide] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
 
-  useEffect(() => {
-    // Check if guide should be hidden
-    const hideGuide = localStorage.getItem("hideGuide");
-    if (!hideGuide) {
-      setShowGuide(true);
-    }
-    
-    // Load saved info
-    const savedNickname = localStorage.getItem("studentNickname");
-    const savedGrade = localStorage.getItem("studentGrade");
-    const savedClass = localStorage.getItem("studentClass");
-    
-    if (savedNickname) {
-      setNickname(savedNickname);
-    } else {
-      // If no nickname saved, show login modal
-      setShowLoginModal(true);
-    }
+  // 기본은 항상 "student" 탭에서 시작 (teacher라도 학생 화면 먼저 보이게)
+  const [activeTab, setActiveTab] = useState<"student" | "teacher">("student");
 
-    if (savedGrade) setGrade(savedGrade);
-    if (savedClass) setClassNumber(savedClass);
-  }, []);
-
-  const handleLoginSuccess = (name: string) => {
-    setNickname(name);
-    setShowLoginModal(false);
-  };
-
-  const topics = getTopics();
-  const easyTopics = topics.filter(t => t.difficulty === 1);
-  const hardTopics = topics.filter(t => t.difficulty >= 2);
-
-  const handleStart = () => {
-    if (!nickname.trim()) {
-      alert("이름 또는 별명을 먼저 입력해 주세요.");
-      return;
-    }
-
-    // Save info
-    localStorage.setItem("studentNickname", nickname.trim());
-    localStorage.setItem("studentGrade", grade.trim());
-    localStorage.setItem("studentClass", classNumber.trim());
-
-    const queryParams = `nickname=${encodeURIComponent(nickname.trim())}&grade=${encodeURIComponent(grade.trim())}&classNumber=${encodeURIComponent(classNumber.trim())}`;
-
-    // 랜덤 모드인 경우: 토론 페이지에서 기존처럼 랜덤 뽑기
-    if (mode === "random") {
-      router.push(`/debate?${queryParams}&mode=random`);
-      return;
-    }
-
-    // 직접 선택 모드인데 선택 안 한 경우
-    if (!topicId) {
-      alert("토론 주제를 하나 선택해 주세요.");
-      return;
-    }
-
-    router.push(`/debate?${queryParams}&mode=manual&topicId=${encodeURIComponent(topicId)}`);
-  };
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050616]">
+        <p className="text-white">Loading...</p>
+      </div>
+    );
+  }
 
   return (
-    <main>
-      <h1 className="dashboard-title">AI 토론 연습 시작하기</h1>
-      
-      <div className="step-indicator">
-        <div className="step-item active">① 이름</div>
-        <span>→</span>
-        <div className="step-item">② 주제 선택</div>
-        <span>→</span>
-        <div className="step-item">③ 입장 정하기</div>
-        <span>→</span>
-        <div className="step-item">④ AI와 토론</div>
-      </div>
+    <div className="relative flex flex-col lg:flex-row w-full min-h-screen bg-[#050616] items-center justify-center" style={{ background: 'radial-gradient(circle at top, #252952 0, #050616 55%, #02030B 100%)' }}>
 
-      <p className="dashboard-subtitle">
-        이름을 입력하고, 토론 주제를 직접 고르거나 랜덤으로 뽑아서 연습할 수 있어요.
-      </p>
-
-      <section className="dashboard-card">
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <label style={{ fontSize: 15, fontWeight: 500, display: "flex", flexDirection: "column", gap: "8px", flex: 1, minWidth: "120px" }}>
-              1. 이름 / 별명
-              <input
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="예: 김철수"
-                className="filter-input"
-                readOnly // Prevent manual editing if logged in via modal
-                onClick={() => setShowLoginModal(true)} // Allow re-opening modal
-              />
-            </label>
-            <label style={{ fontSize: 15, fontWeight: 500, display: "flex", flexDirection: "column", gap: "8px", width: "80px" }}>
-              학년
-              <input
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                placeholder="3"
-                className="filter-input"
-                type="number"
-              />
-            </label>
-            <label style={{ fontSize: 15, fontWeight: 500, display: "flex", flexDirection: "column", gap: "8px", width: "80px" }}>
-              반
-              <input
-                value={classNumber}
-                onChange={(e) => setClassNumber(e.target.value)}
-                placeholder="1"
-                className="filter-input"
-                type="number"
-              />
-            </label>
+      {/* LEFT PANEL (브랜딩 영역) - 화면 상단 또는 좌측에 표시 */}
+      <section className="flex w-full lg:w-1/2 items-center justify-center px-6 py-8 lg:py-12">
+        <div className="max-w-lg space-y-6 text-center">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/20 text-violet-300 text-sm font-semibold border border-violet-500/30">
+            <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+            AI 기반 토론 학습 플랫폼
           </div>
 
-          {/* 2. 주제 선택 방식 */}
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>
-              2. 토론 주제 선택 방법
-            </div>
-            <div className="topic-mode-row">
-              <label className="topic-mode-option">
-                <input
-                  type="radio"
-                  name="topic-mode"
-                  value="random"
-                  checked={mode === "random"}
-                  onChange={() => setMode("random")}
-                />
-                <span>랜덤으로 뽑기</span>
-              </label>
+          {/* Title */}
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight">
+            <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-rose-400 bg-clip-text text-transparent">
+              MovieSSam
+            </span>
+            <br />
+            <span className="text-white">Debate Lab</span>
+          </h1>
 
-              <label className="topic-mode-option">
-                <input
-                  type="radio"
-                  name="topic-mode"
-                  value="manual"
-                  checked={mode === "manual"}
-                  onChange={() => setMode("manual")}
-                />
-                <span>목록에서 직접 고르기</span>
-              </label>
-            </div>
-
-            {mode === "manual" && (
-              <select
-                className="topic-select"
-                value={topicId}
-                onChange={(e) => setTopicId(Number(e.target.value))}
-              >
-                <option value="">-- 토론 주제를 선택해 주세요 --</option>
-                <optgroup label="Easy">
-                  {easyTopics.map((t) => (
-                    <option key={t.id} value={t.id.toString()}>
-                      {t.title}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Hard">
-                  {hardTopics.map((t) => (
-                    <option key={t.id} value={t.id.toString()}>
-                      {t.title}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-            )}
-          </div>
-
-          {/* 3. 시작 버튼 */}
-          <button className="btn-cta" onClick={handleStart}>
-            토론 연습 시작하기
-          </button>
-
-          <p className="hint-text">
-            * 선생님은 상단 메뉴의 <b>‘교사용 대시보드’</b>에서 학생들의 토론
-            기록과 평가를 확인할 수 있어요.
+          {/* Description */}
+          <p className="text-slate-400 text-base md:text-lg max-w-md leading-relaxed mx-auto">
+            선생님은 쉽고 편하게 수업을 준비하고, <br />
+            학생은 AI와 함께 즐겁게 토론 실력을 키웁니다.
           </p>
+
+          {/* Features */}
+          <div className="flex flex-wrap justify-center gap-3 mt-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 text-slate-300 text-sm">
+              <span className="w-2 h-2 rounded-full bg-green-400" />
+              실시간 AI 피드백
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 text-slate-300 text-sm">
+              <span className="w-2 h-2 rounded-full bg-blue-400" />
+              체계적인 토론 구조
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 text-slate-300 text-sm">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              개인화된 학습 경험
+            </div>
+          </div>
         </div>
       </section>
 
-      <GuideModal open={showGuide} onClose={() => setShowGuide(false)} />
-      
-      <LoginModal 
-        open={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
-        onLoginSuccess={handleLoginSuccess}
-      />
-    </main>
+      {/* RIGHT PANEL (학생 또는 선생님 카드 공통) */}
+      <section className="flex flex-col w-full lg:w-1/2 items-center justify-center px-6 py-8 lg:py-12">
+        <div className="w-full max-w-md space-y-6">
+          {/* 상단 탭 바: 학생 / 선생님 */}
+          <div className="w-full">
+            <div className="flex bg-black/30 p-2 gap-2 rounded-2xl border border-white/10">
+              <TabButton
+                active={activeTab === "student"}
+                onClick={() => setActiveTab("student")}
+                icon={StudentIcons.Entry}
+                label="학생"
+              />
+              <TabButton
+                active={activeTab === "teacher"}
+                onClick={() => setActiveTab("teacher")}
+                icon={TeacherIcons.Teacher}
+                label="선생님"
+              />
+            </div>
+          </div>
+
+          {/* 탭에 따라 다른 카드 렌더링 */}
+          {activeTab === "student" ? (
+            <>
+              <StudentEntryForm />
+
+              {/* 선생님 계정으로 로그인한 상태에서 학생 화면 테스트할 때 안내 */}
+              {userRole === "teacher" && (
+                <div className="mt-5 p-4 rounded-xl bg-slate-800/50 text-sm text-slate-400 text-center">
+                  <CommonIcons.Suggestion size={16} className="inline-block mr-1" /> 선생님 계정으로 로그인 중입니다.
+                  <br />
+                  학생 입장을 테스트하려면{" "}
+                  <button
+                    onClick={logout}
+                    className="text-violet-400 underline hover:text-violet-300"
+                  >
+                    로그아웃
+                  </button>{" "}
+                  해주세요.
+                </div>
+              )}
+            </>
+          ) : (
+            <TeacherLoginCard />
+          )}
+        </div>
+      </section>
+    </div>
   );
 }

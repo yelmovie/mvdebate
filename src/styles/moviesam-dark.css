@@ -382,7 +382,7 @@
 .app-nav-tab {
   padding: 8px 16px;
   border-radius: var(--ms-radius-pill);
-  color: var(--ms-text-soft);
+  color: var(--ms-text-muted);
   text-decoration: none;
   font-weight: 600;
   transition: all 0.2s;

@@ -48,10 +48,18 @@ export default function ChatPanel() {
 
   // Auto-scroll to bottom when turns change
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [turns, isLoading]); // Trigger on turns update or loading state change
+    // Prevent scrolling if there are no messages yet (initial load)
+    if (turns.length === 0) return;
+
+    // Add a small delay to ensure layout painting is done before scrolling
+    const timeoutId = setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [turns, isLoading, input]); // Add input to dependencies to scroll when textarea grows
 
   // AI 첫 응답 대기 상태 관리
   useEffect(() => {

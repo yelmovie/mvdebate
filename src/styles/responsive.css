@@ -1,4 +1,4 @@
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 768px) {
   html, body {
     overflow-x: hidden;
     max-width: 100%;
@@ -330,4 +330,69 @@
     height: 100dvh;
     max-height: 100dvh;
   }
+
+  /* Difficulty Selector Mobile Fix */
+  .difficulty-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Topic Banner Mobile Fix */
+  .debate-banner-topic {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  
+  .debate-banner-topic button {
+    margin-left: 0 !important; /* Remove auto margin */
+    align-self: flex-end; /* Align button to right or stick to bottom */
+    width: 100%; /* Make button full width for easier touch? Or keep it compact. Let's try auto first but maybe full width looks better */
+    justify-content: center;
+  }
+
+  /* Banner Text Wrapping */
+  .debate-banner-title {
+    white-space: normal !important;
+    word-break: keep-all;
+    line-height: 1.4;
+  }
 }
+
+/* Base Styles for Difficulty Selector (Desktop default) */
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.difficulty-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--ms-border);
+  background: var(--ms-surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 100px;
+}
+
+.difficulty-btn.selected {
+  border-width: 2px;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.difficulty-label {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.difficulty-desc {
+  font-size: 12px;
+  color: var(--ms-text-muted);
+}
+

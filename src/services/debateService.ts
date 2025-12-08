@@ -13,6 +13,8 @@ import type { DebateSession, DebateTurn } from "../types/domain";
  */
 export async function createSession(payload: {
   userId: string;
+  nickname?: string;
+  classCode?: string; // For Usage Tracking
   topicId: string;
   stance: "pro" | "con";
   difficulty: "low" | "mid" | "high";

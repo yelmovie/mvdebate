@@ -1,0 +1,116 @@
+{
+  "studentStatuses": {
+    "1": {
+      "studentNumber": 1,
+      "name": "1번 sdfsdf",
+      "isConnected": true,
+      "turnCount": 4,
+      "lastActive": "2025-12-06T12:22:52.908Z",
+      "currentSessionId": "session-1765023731095-vfctykab7",
+      "topic": "학원은 하루에 한 곳만 다녀야 한다",
+      "stance": "pro"
+    },
+    "2": {
+      "studentNumber": 2,
+      "name": "2번 예리",
+      "isConnected": true,
+      "turnCount": 6,
+      "lastActive": "2025-12-07T12:30:17.721Z",
+      "currentSessionId": "session-1765110597202-d01baixox",
+      "topic": "인공지능 판사가 인간 판사보다 더 공정한가",
+      "stance": "con"
+    }
+  },
+  "sessions": {
+    "session-1765019487818-ckeqq3ns0": {
+      "id": "session-1765019487818-ckeqq3ns0",
+      "userId": "user-1765019477673",
+      "nickname": "1번 학생",
+      "topicId": "218",
+      "stance": "pro",
+      "aiStance": "con",
+      "difficulty": "low",
+      "createdAt": "2025-12-06T11:11:27.818Z"
+    },
+    "session-1765023731095-vfctykab7": {
+      "id": "session-1765023731095-vfctykab7",
+      "userId": "user-1765023673381",
+      "nickname": "1번 sdfsdf",
+      "topicId": "106",
+      "stance": "pro",
+      "aiStance": "con",
+      "difficulty": "high",
+      "createdAt": "2025-12-06T12:22:11.095Z"
+    },
+    "session-1765103237652-j5wxvb0s8": {
+      "id": "session-1765103237652-j5wxvb0s8",
+      "userId": "user-1765103229281",
+      "nickname": "2번 예리",
+      "topicId": "322",
+      "stance": "pro",
+      "aiStance": "con",
+      "difficulty": "low",
+      "createdAt": "2025-12-07T10:27:17.652Z"
+    },
+    "session-1765104957604-zjcqrwtd8": {
+      "id": "session-1765104957604-zjcqrwtd8",
+      "userId": "user-1765104950349",
+      "nickname": "2번 예리",
+      "topicId": "213",
+      "stance": "pro",
+      "aiStance": "con",
+      "difficulty": "low",
+      "createdAt": "2025-12-07T10:55:57.604Z"
+    },
+    "session-1765106660301-80x3h77b5": {
+      "id": "session-1765106660301-80x3h77b5",
+      "userId": "user-1765106653998",
+      "nickname": "2번 예리",
+      "topicId": "209",
+      "stance": "pro",
+      "aiStance": "con",
+      "difficulty": "low",
+      "createdAt": "2025-12-07T11:24:20.301Z"
+    },
+    "session-1765110240918-jl1a26okv": {
+      "id": "session-1765110240918-jl1a26okv",
+      "userId": "user-1765110233548",
+      "nickname": "2번 예리",
+      "topicId": "208",
+      "stance": "pro",
+      "aiStance": "con",
+      "difficulty": "low",
+      "createdAt": "2025-12-07T12:24:00.919Z"
+    },
+    "session-1765110481838-mioj4zlo6": {
+      "id": "session-1765110481838-mioj4zlo6",
+      "userId": "user-1765110457563",
+      "nickname": "2번 예리",
+      "topicId": "232",
+      "stance": "pro",
+      "aiStance": "con",
+      "difficulty": "low",
+      "createdAt": "2025-12-07T12:28:01.838Z"
+    },
+    "session-1765110481933-cyo9muy03": {
+      "id": "session-1765110481933-cyo9muy03",
+      "userId": "user-1765110457563",
+      "nickname": "2번 예리",
+      "topicId": "232",
+      "stance": "pro",
+      "aiStance": "con",
+      "difficulty": "high",
+      "createdAt": "2025-12-07T12:28:01.933Z"
+    },
+    "session-1765110597202-d01baixox": {
+      "id": "session-1765110597202-d01baixox",
+      "userId": "user-1765110585610",
+      "nickname": "2번 예리",
+      "topicId": "237",
+      "stance": "con",
+      "aiStance": "pro",
+      "difficulty": "mid",
+      "createdAt": "2025-12-07T12:29:57.202Z"
+    }
+  }
+}

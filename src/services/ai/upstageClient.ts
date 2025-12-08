@@ -165,8 +165,13 @@ export function parseAIResponse(text: string): {
       let aiMessage = typeof message === "string" ? message : JSON.stringify(message);
       
       // Safety: Remove leaked labels from text (e.g. "**labels**: ...")
-      aiMessage = aiMessage.replace(/\*\*labels\*\*:\s*\[.*?\]/gi, "").trim();
-      aiMessage = aiMessage.replace(/"labels":\s*\[.*?\]/gi, "").trim();
+      // Remove any leaked JSON keys or markdown bold keys that shouldn't be in the message
+      aiMessage = aiMessage
+        .replace(/\*\*labels\*\*:\s*\[.*?\]/gi, "")
+        .replace(/"labels":\s*\[.*?\]/gi, "")
+        .replace(/\*\*nextStep\*\*:\s*".*?"/gi, "")
+        .replace(/"nextStep":\s*".*?"/gi, "")
+        .trim();
 
       let labels: string[] | undefined;
       if (Array.isArray(parsed.labels)) {
@@ -188,7 +193,16 @@ export function parseAIResponse(text: string): {
   }
 
   // 2. Fallback: Manual regex for partial JSON or just plain text
-  const cleaned = cleanMarkdownCodeBlock(text);
+  let cleaned = cleanMarkdownCodeBlock(text);
+  
+  // Aggressive cleaning for plain text leaks
+  cleaned = cleaned
+    .replace(/\*\*labels\*\*:\s*\[.*?\]/gi, "")
+    .replace(/"labels":\s*\[.*?\]/gi, "")
+    .replace(/\*\*nextStep\*\*:\s*".*?"/gi, "")
+    .replace(/"nextStep":\s*".*?"/gi, "")
+    .replace(/```json[\s\S]*?```/g, "") // Remove any remaining json blocks
+    .trim();
 
   // Check for "aiMessage" field even if JSON is invalid
   const aiMessageMatch = cleaned.match(/"aiMessage"\s*:\s*"([^"]+)"/);

@@ -31,6 +31,7 @@ export type DebateLabel =
 export interface DebateSession {
   id: string;
   userId: string;
+  nickname?: string; // Added for teacher dashboard
   topicId: string;
   stance: "pro" | "con";
   difficulty: "low" | "mid" | "high";

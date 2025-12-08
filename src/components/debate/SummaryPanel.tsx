@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useDebateStore } from "../../store/debateStore";
-import { apiFetch } from "../../services/apiClient";
-import SelfEvaluationModal from "./SelfEvaluationModal";
-import type { AiEvaluation } from "../../types/domain";
+import { saveDebateReport } from "../../services/reportService";
+import { useAuth } from "../../contexts/AuthContext";
 import { PERSONAS } from "../../config/personas";
+import SelfEvaluationModal from "./SelfEvaluationModal";
+import { apiFetch } from "../../services/apiClient";
+import type { AiEvaluation } from "../../types/domain";
 
 export default function SummaryPanel() {
+  const { user } = useAuth(); // Get current user for studentId
   const {
     nickname,
     currentTopic,
@@ -23,7 +26,7 @@ export default function SummaryPanel() {
   const [evaluating, setEvaluating] = useState(false);
   const [savingPDF, setSavingPDF] = useState(false);
   const [showEvalModal, setShowEvalModal] = useState(false);
-  const [autoAction, setAutoAction] = useState<"pdf" | "email" | null>(null);
+  const [autoAction, setAutoAction] = useState<"pdf" | "save" | null>(null);
 
   const selectedPersona = PERSONAS.find(p => p.id === selectedPersonaId);
 
@@ -86,6 +89,28 @@ export default function SummaryPanel() {
 
       if (result.evaluation) {
         setEvaluation(result.evaluation);
+        
+        // Auto-save the report to server if user is logged in
+        if (user && result.evaluation) {
+             const reportData = {
+                studentId: user.uid,
+                sessionId: `${Date.now()}`, // Simple ID generation
+                topicTitle: currentTopic.title,
+                summary: result.evaluation.comment,
+                scores: {
+                    criticalThinking: 0, // Not provided by AI yet, default 0
+                    logic: 0,
+                    expression: result.evaluation.clarity,
+                    listening: result.evaluation.relevance,
+                    creative: result.evaluation.evidence // Mapping evidence to creative field as proxy
+                },
+                recommendation: result.evaluation.comment
+             };
+             // We can trigger save here or user manual save. 
+             // Requirement says "Send to Teacher" -> Save to dashboard.
+             // So we will trigger this in the modal "Send" button.
+        }
+
       } else {
         throw new Error("평가 결과가 없습니다.");
       }
@@ -138,7 +163,7 @@ export default function SummaryPanel() {
       {!isEnded ? (
         <div>
           <p className="hint-text" style={{ fontSize: 12, marginBottom: 8 }}>
-            토론이 끝나면 종료 버튼을 눌러 AI 평가를 받고 PDF로 저장하세요.
+            토론이 끝나면 종료 버튼을 눌러 AI 평가를 받고 리포트를 저장하세요.
           </p>
           <button
             className="btn"
@@ -186,12 +211,12 @@ export default function SummaryPanel() {
               <button
                 className="btn btn-secondary"
                 onClick={() => {
-                  setAutoAction("email");
+                  setAutoAction("save");
                   setShowEvalModal(true);
                 }}
-                style={{ flex: 1, fontSize: 13 }}
+                style={{ flex: 1, fontSize: 13, background: "#8b5cf6", color: "white", border: "none" }}
               >
-                📧 선생님께 보내기
+                📤 선생님께 제출
               </button>
             </div>
           )}

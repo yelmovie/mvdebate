@@ -1,0 +1,116 @@
+/* src/components/layout/AppShell.css */
+
+/* Top Fixed Navigation Bar */
+.top-nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 68px;
+  background: linear-gradient(90deg, #070A1A, #12152A);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.top-nav-left {
+  display: flex;
+  align-items: center;
+}
+
+.top-nav-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.top-nav-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.top-nav-subtitle {
+  font-size: 11px;
+  color: rgba(210, 218, 255, 0.7);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.top-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.top-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: rgba(230, 235, 255, 0.9);
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: none;
+  padding: 4px 8px;
+  opacity: 0.85;
+  transition: all 0.15s ease-out;
+}
+
+.top-nav-item i {
+  font-size: 18px;
+  color: rgba(230, 235, 255, 0.9);
+}
+
+.top-nav-item span {
+  font-size: 11px;
+  color: rgba(230, 235, 255, 0.85);
+  font-weight: 500;
+}
+
+.top-nav-item:hover {
+  transform: translateY(-1px) scale(1.05);
+  opacity: 1;
+}
+
+.top-nav-item:hover i,
+.top-nav-item:hover span {
+  color: rgba(255, 255, 255, 1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .top-nav-bar {
+    height: 60px;
+    padding: 0 16px;
+  }
+
+  .top-nav-title {
+    font-size: 14px;
+  }
+
+  .top-nav-subtitle {
+    font-size: 10px;
+  }
+
+  .top-nav-right {
+    gap: 12px;
+  }
+
+  .top-nav-item i {
+    font-size: 16px;
+  }
+
+  .top-nav-item span {
+    font-size: 10px;
+  }
+}
+

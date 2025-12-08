@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 export type ScreenMode = "phone-portrait" | "tablet-landscape";
 
@@ -14,19 +15,26 @@ const ScreenModeContext = createContext<ScreenModeContextType | undefined>(undef
 export function ScreenModeProvider({ children }: { children: React.ReactNode }) {
   const [screenMode, setScreenModeState] = useState<ScreenMode>("tablet-landscape");
 
+  const { user, profile } = useAuth();
+
   useEffect(() => {
-    // Load from localStorage on mount
+    // 1. If authenticated (Teacher/Student), FORCE 'tablet-landscape' (PC/Tablet view)
+    if (user && profile && 'role' in profile) {
+      if (profile.role === 'teacher' || profile.role === 'student') {
+        setScreenModeState("tablet-landscape");
+        return; 
+      }
+    }
+
+    // 2. Otherwise (Guest/Public), use saved preference or DEFAULT TO LANDSCAPE
     const savedMode = localStorage.getItem("mvdebate_screen_mode") as ScreenMode;
     if (savedMode === "phone-portrait" || savedMode === "tablet-landscape") {
       setScreenModeState(savedMode);
     } else {
-      // Auto-detect if no saved preference
-      const isMobile = window.matchMedia("(max-width: 768px)").matches;
-      if (isMobile) {
-        setScreenModeState("phone-portrait");
-      }
+      // FORCE DEFAULT LANDSCAPE (Disable auto-mobile detect)
+      setScreenModeState("tablet-landscape");
     }
-  }, []);
+  }, [user, profile]);
 
   const setScreenMode = (mode: ScreenMode) => {
     setScreenModeState(mode);

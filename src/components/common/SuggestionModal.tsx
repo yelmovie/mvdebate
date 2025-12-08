@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
-import { containsBadWords, checkContentSafety } from "../../utils/filterUtils";
+import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from "firebase/firestore";
+import { db } from "../../firebase"; // Ensure this path is correct based on project structure
+import { checkContentSafety } from "../../utils/filterUtils";
 
 interface Suggestion {
   id: string;
-  nickname: string;
+  nickname: string; // or email
   content: string;
-  createdAt: string;
+  createdAt: string; // ISO string
 }
 
 interface Props {
@@ -29,6 +30,8 @@ export default function SuggestionModal({ open, onClose }: Props) {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const DEVELOPER_PASSWORD = "1rghkdwjd!!"; // Requested Password
 
   useEffect(() => {
     if (open) {
@@ -61,46 +64,34 @@ export default function SuggestionModal({ open, onClose }: Props) {
 
     // Safety Check (Async)
     try {
-      if (contactEmail.trim()) {
-        const emailSafety = await checkContentSafety(contactEmail);
-        if (!emailSafety.allowed) {
-          alert("이메일에 부적절한 단어가 포함되어 있습니다.");
-          return;
-        }
-      }
-
+      // Basic safety check mostly for bad words, though this is a suggestion box so we might be lenient
+      // strict: true? maybe not needed for suggestions to dev
       const contentSafety = await checkContentSafety(content);
-      if (!contentSafety.allowed) {
-        alert(contentSafety.feedbackForStudent || "내용에 비속어나 부적절한 단어가 포함되어 있습니다.");
-        return;
+      if (!contentSafety.allowed && contentSafety.flaggedWords && contentSafety.flaggedWords.length > 0) {
+         // Only block if strictly flagged words are found, otherwise allow feedback
+         alert("내용에 비속어가 포함되어 있어 전송할 수 없습니다.");
+         return;
       }
     } catch (error) {
       console.error("Safety check failed:", error);
-      // Fail-open or handle error
     }
 
     try {
       setIsSubmitting(true);
-      // Send contactEmail as 'nickname' (or "익명" if empty)
       const nickname = contactEmail.trim() || "익명";
       
-      const response = await fetch("/api/suggestions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nickname, content }),
+      // Save to Firestore
+      await addDoc(collection(db, "suggestions"), {
+        nickname: nickname,
+        content: content,
+        createdAt: new Date().toISOString()
       });
 
-      const data = await response.json();
+      alert("소중한 제안 감사합니다! 개발자에게 전달되었습니다.");
+      setContactEmail("");
+      setContent("");
+      onClose();
 
-      if (response.ok) {
-        alert("소중한 제안 감사합니다! 개발자에게 전달되었습니다.");
-        setContactEmail("");
-        setContent("");
-        onClose();
-      } else {
-        const errorMessage = data.error || "제안 전송에 실패했습니다.";
-        alert(`오류: ${errorMessage}`);
-      }
     } catch (error: any) {
       console.error("Submit error:", error);
       alert(`제안 전송 중 오류가 발생했습니다: ${error.message || "알 수 없는 오류"}`);
@@ -110,7 +101,7 @@ export default function SuggestionModal({ open, onClose }: Props) {
   };
 
   const handleAdminLogin = () => {
-    if (password === "1qaz2wsx") {
+    if (password === DEVELOPER_PASSWORD) {
       setIsAdminAuthenticated(true);
       fetchSuggestions();
     } else {
@@ -121,15 +112,23 @@ export default function SuggestionModal({ open, onClose }: Props) {
   const fetchSuggestions = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/suggestions", { cache: "no-store" });
-      const data = await response.json();
+      // Query Firestore
+      const q = query(collection(db, "suggestions"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
       
-      if (response.ok) {
-        setSuggestions(data.suggestions || []);
-      } else {
-        const errorMessage = data.error || "목록을 불러오는데 실패했습니다.";
-        alert(`오류: ${errorMessage}`);
-      }
+      const loaded: Suggestion[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        loaded.push({
+          id: doc.id,
+          nickname: data.nickname || "Unknown",
+          content: data.content || "",
+          createdAt: data.createdAt || new Date().toISOString()
+        });
+      });
+
+      setSuggestions(loaded);
+
     } catch (error: any) {
       console.error("Fetch error:", error);
       alert(`목록을 불러오는 중 오류가 발생했습니다: ${error.message || "알 수 없는 오류"}`);
@@ -139,22 +138,12 @@ export default function SuggestionModal({ open, onClose }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    // if (!confirm("정말 이 제안을 삭제하시겠습니까?")) return; // Removed confirmation as requested
+    if (!confirm("정말 이 제안을 삭제하시겠습니까? (복구 불가)")) return;
 
     try {
-      const response = await fetch(`/api/suggestions?id=${id}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // alert("삭제되었습니다."); // Optional: remove alert too if it's annoying, but keeping for feedback
-        fetchSuggestions(); // Refresh list
-      } else {
-        const errorMessage = data.error || "삭제에 실패했습니다.";
-        alert(`오류: ${errorMessage}`);
-      }
+      await deleteDoc(doc(db, "suggestions", id));
+      // Remove from local state
+      setSuggestions(prev => prev.filter(item => item.id !== id));
     } catch (error: any) {
       console.error("Delete error:", error);
       alert(`삭제 중 오류가 발생했습니다: ${error.message || "알 수 없는 오류"}`);

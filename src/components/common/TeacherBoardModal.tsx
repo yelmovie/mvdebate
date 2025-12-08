@@ -34,11 +34,22 @@ export default function TeacherBoardModal({ open, onClose }: Props) {
 
   if (!open) return null;
 
-  const handleLogin = () => {
-    if (password === "5050") {
-      setIsAuthenticated(true);
-    } else {
-      alert("비밀번호가 틀렸습니다.");
+  const handleLogin = async () => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsAuthenticated(true);
+      } else {
+        alert(data.message || "비밀번호가 틀렸습니다.");
+      }
+    } catch (e) {
+      alert("로그인 중 오류가 발생했습니다.");
     }
   };
 
@@ -160,6 +171,24 @@ export default function TeacherBoardModal({ open, onClose }: Props) {
                 >
                   📊 리포트 보기 (PDF)
                 </button>
+
+                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed var(--ms-border-subtle)" }}>
+                  <p style={{ fontSize: 14, color: "var(--ms-text)", marginBottom: "8px" }}>
+                    <strong>실시간 현황판</strong><br/>
+                    <span style={{ fontSize: 12, color: "var(--ms-text-muted)" }}>
+                      학생들의 진행 상황을 실시간으로 확인합니다.
+                    </span>
+                  </p>
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={() => {
+                      window.location.href = "/teacher";
+                    }}
+                    style={{ width: "100%", background: "#4caf50", borderColor: "#4caf50" }}
+                  >
+                    👨‍🏫 실시간 대시보드 입장
+                  </button>
+                </div>
               </div>
             </div>
           )}
