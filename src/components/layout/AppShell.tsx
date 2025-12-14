@@ -18,6 +18,8 @@ import {
   TeacherIcons,
   iconStyles,
 } from "../../lib/icons";
+import Navbar from "./Navbar";
+import ActionButtons from "./ActionButtons";
 import "./AppShell.css";
 
 function UserHeaderProfile() {
@@ -138,7 +140,7 @@ function TeacherBoardButton() {
   );
 }
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export default function AppShell() {
   const pathname = usePathname();
   const router = useRouter();
   const [theme, setTheme] = useState<Theme>("dark");
@@ -172,150 +174,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Top Fixed Navigation Bar */}
-      <nav className="top-nav-bar">
-        <div className="top-nav-left">
-          <div className="top-nav-brand">
-            <div className="top-nav-title">MovieSSam Debate Lab</div>
-            <div className="top-nav-subtitle">학생용 AI 모의 토론 연습</div>
-          </div>
-        </div>
-        
-        <div className="top-nav-right">
-          <Link href="/" className="top-nav-item">
-            <NavIcons.Home size={18} className="transition-all duration-200 hover:scale-105" />
-            <span>홈</span>
-          </Link>
-          <Link href="/debate" className="top-nav-item">
-            <NavIcons.StudentDebate size={18} className="transition-all duration-200 hover:scale-105" />
-            <span>학생 토론</span>
-          </Link>
-          <Link href="/student/mypage" className="top-nav-item">
-            <NavIcons.MyPage size={18} className="transition-all duration-200 hover:scale-105" />
-            <span>마이페이지</span>
-          </Link>
-          <button 
-            className="top-nav-item"
-            onClick={(e) => {
-              e.preventDefault();
-              // TODO: 도움말 모달 또는 페이지 연결
-            }}
-          >
-            <CommonIcons.Help size={18} className="transition-all duration-200 hover:scale-105" />
-            <span>도움말</span>
-          </button>
-        </div>
-      </nav>
-
-      <header className="app-header">
-        <div className="header-left" style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-          <button className="app-logo" onClick={goHome} style={{ flexShrink: 0 }}>
-            <img 
-              src="/images/logo/profile.png" 
-              alt="MovieSam Logo" 
-              className="app-logo-img"
-              width={40}
-              height={40}
-              style={{ borderRadius: "10px", objectFit: "cover" }}
-            />
-            <div className="app-logo-text">
-              <div className="app-logo-title" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                MovieSSam Debate Lab 
-                <span style={{ fontSize: "10px", fontWeight: "normal", background: "var(--ms-primary)", padding: "1px 4px", borderRadius: "4px", color: "white" }}>v1.0</span>
-              </div>
-              <div className="app-logo-sub">학생용 AI 토론 연습실</div>
-            </div>
-          </button>
-
-          <nav className="app-nav-left" style={{ display: "flex", gap: "8px" }}>
-            <button 
-              className={"app-nav-tab" + (pathname === "/" ? " app-nav-tab--active" : "")} 
-              onClick={goHome}
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              <NavIcons.Home size={18} color={iconStyles.color.white} />
-              홈
-            </button>
-            <Link
-              href="/debate"
-              className={
-                "app-nav-tab" + (isActive("/debate") ? " app-nav-tab--active" : "")
-              }
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              <NavIcons.StudentDebate size={18} color={iconStyles.color.white} />
-              학생 토론
-            </Link>
-            <Link
-              href="/student/mypage"
-              className={
-                "app-nav-tab" + (isActive("/student/mypage") ? " app-nav-tab--active" : "")
-              }
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              <NavIcons.MyPage size={18} color={iconStyles.color.white} />
-              마이페이지
-            </Link>
-          </nav>
-        </div>
-
-        <div className="app-right" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          
-          {/* User Profile */}
-          <UserHeaderProfile />
-          
-          {/* Divider */}
-          <div className="w-[1px] h-6 bg-slate-300 dark:bg-slate-700 mx-2"></div>
-
-          {/* Icons Row */}
-          <div className="flex items-center gap-2">
-              <HeaderIconButton 
-                icon={CommonIcons.Back} 
-                title="뒤로가기" 
-                onClick={() => {
-                    if (window.history.length > 1) router.back();
-                    else router.push("/");
-                }}
-                bgColor="bg-slate-500 hover:bg-slate-600"
-              />
-
-              <HeaderIconButton 
-                icon={CommonIcons.Suggestion} 
-                title="건의하기" 
-                onClick={() => setShowSuggestionModal(true)}
-                bgColor="bg-amber-500 hover:bg-amber-600"
-              />
-
-              {/* QR Popup (Wrapper style handling is inside component, but we need to ensure alignment) */}
-              <QrPopup />
-
-              {/* Teacher Board is a pill button, distinct from icons */}
-              <TeacherBoardButton />
-
-              <HeaderIconButton 
-                icon={theme === "dark" ? CommonIcons.Moon : CommonIcons.Sun}
-                title="다크 모드" 
-                onClick={toggleTheme}
-                bgColor="bg-indigo-500 hover:bg-indigo-400"
-              />
-
-              <HeaderIconButton 
-                icon={CommonIcons.Logout} 
-                title="로그아웃" 
-                onClick={async () => {
-                     if(!confirm("로그아웃 하시겠습니까?")) return;
-                     await logout();
-                     router.push("/");
-                }}
-                bgColor="bg-pink-500 hover:bg-pink-400"
-              />
-          </div>
-        </div>
-      </header>
-
-
-
-      <div className="dashboard-container">{children}</div>
+      {/* Single Navbar - Clean Design */}
+      <Navbar />
 
       <SuggestionModal 
         open={showSuggestionModal} 

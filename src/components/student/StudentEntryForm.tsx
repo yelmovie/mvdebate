@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStudent } from "../../contexts/StudentContext";
 import { joinClass, getClassInfo, getClassStudentsPublic } from "../../services/studentService";
-import { StudentIcons, iconStyles } from "../../lib/icons";
-import "./StudentEntryForm.css";
+import { FaHashtag, FaUser, FaIdCard, FaCircleCheck, FaRocket } from "react-icons/fa6";
 
 export default function StudentEntryForm() {
   const router = useRouter();
@@ -110,157 +109,141 @@ export default function StudentEntryForm() {
   };
 
   return (
-    <div className="student-entry-wrapper">
-      <div className="student-entry-card">
-        {/* Card Header */}
-        <div className="student-entry-header">
-          <h1 className="student-entry-title">
-            <StudentIcons.Entry 
-              className="inline-block mr-2 align-middle transition-all duration-200 hover:scale-105" 
-              size={24} 
-              color={iconStyles.color.primary} 
-            />
-            학생 입장
-          </h1>
-          <p className="student-entry-subtitle">
-            반 코드를 입력하고 우리 반 토론 방으로 입장해 보세요.
-          </p>
-        </div>
+    <div className="w-full">
+      {/* 헤더 제거 - 상위 컴포넌트에서 처리 */}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="student-entry-form">
-          {/* Class Code Input */}
-          <div className="student-entry-form-group">
-            <label className="student-entry-form-label">
-              <span>반 코드</span>
-              {isValidClass && (
-                <span className="student-entry-form-valid">✅ 확인됨 ({maxNumber}명)</span>
-              )}
-            </label>
-            <input 
-              type="text" 
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Class Code */}
+        <div className="space-y-2.5">
+          <label className="text-sm font-semibold flex items-center gap-2.5" style={{ color: "var(--landing-text)" }}>
+            <div className="p-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--landing-border)" }}>
+              <FaHashtag size={14} className="text-purple-200" />
+            </div>
+            <span>반 코드</span>
+          </label>
+          <div className="relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+              <FaIdCard
+                size={18}
+                className="opacity-80"
+                style={{ color: isValidClass ? "rgba(34,197,94,0.95)" : "rgba(226,232,240,0.6)" }}
+              />
+            </div>
+            <input
+              type="text"
               placeholder="예: A1234"
               value={classCode}
               onChange={e => setClassCode(e.target.value.toUpperCase())}
-              className={`student-entry-form-input ${isValidClass ? 'student-entry-form-input--valid' : ''}`}
+              className="landing-control landing-focus pl-11 text-base"
               maxLength={5}
             />
-          </div>
-
-          {/* Number & Name Row */}
-          <div className="student-entry-form-row">
-            <div className="student-entry-form-group student-entry-form-group--number">
-              <label className="student-entry-form-label">번호</label>
-              <div className="student-entry-form-select-wrapper">
-                <select 
-                  value={number}
-                  onChange={e => handleNumberChange(e.target.value)}
-                  className="student-entry-form-select"
-                >
-                  {Array.from({ length: maxNumber }, (_, i) => i + 1).map(n => (
-                    <option key={n} value={n}>{n}번</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="student-entry-form-group student-entry-form-group--name">
-              <label className="student-entry-form-label">이름</label>
-              <input 
-                type="text" 
-                placeholder="이름 입력"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="student-entry-form-input"
-              />
-            </div>
-          </div>
-
-          {/* Agreement Checkboxes */}
-          <div className="student-entry-form-agreement">
-            <label className="student-entry-form-checkbox-label">
-              <input
-                type="checkbox"
-                checked={agreePrivacy}
-                onChange={(e) => setAgreePrivacy(e.target.checked)}
-                className="student-entry-form-checkbox"
-              />
-              <span className="student-entry-form-checkbox-text">
-                개인정보 처리방침에 동의합니다{" "}
-                <a
-                  href="/privacy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="student-entry-form-link"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  (보기)
-                </a>
+            {isValidClass && (
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold flex items-center gap-2">
+                <FaCircleCheck size={18} className="text-green-400" />
+                <span>{maxNumber}명</span>
               </span>
-            </label>
-            <label className="student-entry-form-checkbox-label">
-              <input
-                type="checkbox"
-                checked={agreeTerms}
-                onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="student-entry-form-checkbox"
-              />
-              <span className="student-entry-form-checkbox-text">
-                이용약관에 동의합니다{" "}
-                <a
-                  href="/terms"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="student-entry-form-link"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  (보기)
-                </a>
-              </span>
-            </label>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="student-entry-form-error">
-              {error}
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <button 
-            type="submit" 
-            className="student-entry-form-submit"
-            disabled={loading || !agreePrivacy || !agreeTerms}
-          >
-            {loading ? (
-              "입장 확인 중..."
-            ) : (
-              <>
-                <StudentIcons.StartDebate size={18} className="inline-block mr-1" />
-                우리 반 입장하기
-              </>
             )}
-          </button>
-        </form>
-
-        {/* Privacy Notice */}
-        <div style={{
-          marginTop: "24px",
-          padding: "16px",
-          background: "rgba(4, 6, 18, 0.4)",
-          borderRadius: "12px",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          fontSize: "12px",
-          color: "rgba(203, 213, 225, 0.8)",
-          lineHeight: "1.6",
-          textAlign: "center"
-        }}>
-          본 서비스는 2025년 교육 실험 목적의 시범 운영 중이며<br />
-          학생 이름·번호·반코드 외의 개인정보는 저장하지 않습니다.<br />
-          시범 운영 종료 후 모든 학생 데이터는 자동 삭제됩니다.
+          </div>
         </div>
-      </div>
+
+        {/* Number & Name */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2.5">
+            <label className="text-sm font-semibold flex items-center gap-2.5" style={{ color: "var(--landing-text)" }}>
+              <div className="p-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--landing-border)" }}>
+                <span className="font-bold text-xs" style={{ color: "var(--landing-muted)" }}>#</span>
+              </div>
+              <span>번호</span>
+            </label>
+            <div className="relative">
+              <select
+                value={number}
+                onChange={e => handleNumberChange(e.target.value)}
+                className="landing-control landing-focus text-base"
+              >
+                {Array.from({ length: maxNumber }, (_, i) => i + 1).map(n => (
+                  <option key={n} value={n} className="bg-slate-900">{n}번</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+             <label className="text-sm font-semibold flex items-center gap-2.5" style={{ color: "var(--landing-text)" }}>
+               <div className="p-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--landing-border)" }}>
+                 <FaUser size={14} className="text-violet-200" />
+               </div>
+               <span>이름</span>
+             </label>
+             <div className="relative">
+               <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                 <FaUser size={18} style={{ color: "rgba(226,232,240,0.6)" }} />
+               </div>
+               <input
+                 type="text"
+                 placeholder="본명 입력"
+                 value={name}
+                 onChange={e => setName(e.target.value)}
+                 className="landing-control landing-focus pl-11 text-base"
+               />
+             </div>
+          </div>
+        </div>
+
+        {/* Agreements */}
+        <div className="space-y-3 pt-2">
+           <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl landing-focus"
+             style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--landing-border)" }}
+           >
+             <input 
+                type="checkbox" 
+                checked={agreePrivacy} 
+                onChange={e => setAgreePrivacy(e.target.checked)}
+                className="w-5 h-5 cursor-pointer" 
+             />
+             <span className="text-sm font-medium flex-1" style={{ color: "var(--landing-text)" }}>개인정보 처리방침 동의</span>
+           </label>
+           <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl landing-focus"
+             style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--landing-border)" }}
+           >
+             <input 
+                type="checkbox" 
+                checked={agreeTerms} 
+                onChange={e => setAgreeTerms(e.target.checked)}
+                className="w-5 h-5 cursor-pointer" 
+             />
+             <span className="text-sm font-medium flex-1" style={{ color: "var(--landing-text)" }}>이용약관 동의</span>
+           </label>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="text-sm text-center py-3 rounded-xl border landing-glass"
+            style={{ borderColor: "rgba(248,113,113,0.35)", color: "rgba(254,202,202,0.95)" }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="landing-primary-btn landing-focus flex items-center justify-center gap-2.5"
+        >
+          {loading ? (
+            <span className="flex items-center gap-2.5">
+              <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+              <span>입장 중...</span>
+            </span>
+          ) : (
+            <>
+              <FaRocket size={18} className="shrink-0" />
+              <span>토론 입장하기</span>
+            </>
+          )}
+        </button>
+      </form>
     </div>
   );
 }

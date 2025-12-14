@@ -52,7 +52,7 @@ export default function TeacherDashboardPage() {
   const studentNumbers = Array.from({ length: 30 }, (_, i) => i + 1);
 
   return (
-    <main className="teacher-dashboard">
+    <div className="teacher-dashboard">
       <header style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
            <Link href="/" style={{ textDecoration: 'none', color: 'var(--ms-text-muted)', fontSize: 14 }}>
@@ -178,6 +178,6 @@ export default function TeacherDashboardPage() {
           );
         })}
       </div>
-    </main>
+    </div>
   );
 }

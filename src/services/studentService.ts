@@ -147,3 +147,52 @@ export const getClassStudentsPublic = async (classCode: string) => {
         throw error;
     }
 };
+
+// --- Gamification for Students ---
+export const updateStudentScore = async (studentId: string, scoreDelta: number) => {
+    try {
+        const studentRef = doc(db, "students", studentId);
+        const studentSnap = await getDoc(studentRef);
+        
+        if (!studentSnap.exists()) throw new Error("Student not found");
+        
+        const data = studentSnap.data() as StudentProfile;
+        let { level = 1, points = 0, coupons = [] } = data;
+        
+        let newScore = points + scoreDelta;
+        let newLevel = level;
+        const earnedCoupons: any[] = []; 
+
+        // Level up logic: Every 100 points
+        while (newScore >= 100) {
+            newScore -= 100;
+            newLevel += 1;
+            
+            // Issue random coupon
+            const couponTypes = ["SEAT_SWAP", "HINT_PEEK", "TOPIC_VETO", "TIME_EXTENSION"];
+            const randomType = couponTypes[Math.floor(Math.random() * couponTypes.length)];
+            
+            const newCoupon = {
+                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                type: randomType,
+                issuedAt: new Date().toISOString(),
+                used: false,
+                issuedBy: "system"
+            };
+            
+            earnedCoupons.push(newCoupon);
+            coupons.push(newCoupon as any);
+        }
+        
+        await updateDoc(studentRef, {
+            points: newScore,
+            level: newLevel,
+            coupons: coupons
+        });
+
+        return { level: newLevel, coupons: earnedCoupons, totalScore: newScore };
+    } catch (error) {
+        console.error("[Gamification Error]", error);
+        throw error;
+    }
+};

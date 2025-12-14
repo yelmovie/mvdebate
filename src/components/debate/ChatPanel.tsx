@@ -51,13 +51,18 @@ export default function ChatPanel() {
     // Prevent scrolling if there are no messages yet (initial load)
     if (turns.length === 0) return;
 
-    // Add a small delay to ensure layout painting is done before scrolling
-    const timeoutId = setTimeout(() => {
+    // Use requestAnimationFrame for better mobile support
+    const scrollToBottom = () => {
       if (messagesEndRef.current) {
         messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
       }
-    }, 100);
+    };
 
+    // Immediate scroll attempt
+    scrollToBottom();
+
+    // Delayed scroll for layout shifts (mobile keyboard, etc)
+    const timeoutId = setTimeout(scrollToBottom, 150);
     return () => clearTimeout(timeoutId);
   }, [turns, isLoading, input]); // Add input to dependencies to scroll when textarea grows
 
@@ -153,33 +158,33 @@ export default function ChatPanel() {
       return;
     }
 
-    // Safety Check (Async)
-    try {
-      const safetyResult = await checkContentSafety(input);
-      if (!safetyResult.allowed) {
-        alert(safetyResult.feedbackForStudent || "비속어나 부적절한 단어가 포함되어 있습니다.\n바르고 고운 말을 사용해주세요.");
-        return;
-      }
-    } catch (error) {
-      console.error("Safety check failed:", error);
-      // In case of error, we default to allowing (fail-open) or maybe a simple local check
-      // For now, let's just proceed to avoid blocking the user due to server error
-    }
-
-    if (isLoading) return;
-
-    if (studentTurnCount + 1 >= DEBATE_CONFIG.MAX_TURNS) {
-      setEnded(true);
-      return;
-    }
-
     const messageText = input.trim();
+    // Do NOT clear input yet. Wait for success or at least optimistic update.
+    // Actually, optimistic update is better UI. We clear it, but restore if error.
+    const prevInput = input; 
     setInput("");
-    setStudentTurnCount((prev) => prev + 1);
+    
+    // Optimistic turn count update? No, let's wait or handle it.
+    // Currently logic does setStudentTurnCount((prev) => prev + 1); before async.
+    // That is fine, we revert on error.
 
     try {
+      // Safety Check (Async) - Fail Open on Network Error
+      try {
+        const safetyResult = await checkContentSafety(messageText);
+        if (!safetyResult.allowed) {
+          alert(safetyResult.feedbackForStudent || "비속어나 부적절한 단어가 포함되어 있습니다.\n바르고 고운 말을 사용해주세요.");
+          setInput(prevInput); // Restore input
+          return;
+        }
+      } catch (safetyError) {
+        console.warn("Safety check failed (Network?), allowing message:", safetyError);
+        // Fail open: Allow message if safety check server is down
+      }
+
       setLoading(true);
       setError(undefined);
+      setStudentTurnCount((prev) => prev + 1);
 
       const currentTurnCount = turns.length + 1;
       const turnIndex = currentTurnCount;
@@ -225,7 +230,9 @@ export default function ChatPanel() {
       console.error("[ChatPanel] Send error:", e);
       const errorMessage = e?.message || "전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
       setError(errorMessage);
-      setInput(messageText);
+      
+      // Restore state on error
+      setInput(prevInput); 
       setStudentTurnCount((prev) => Math.max(0, prev - 1));
     } finally {
       setLoading(false);
@@ -413,10 +420,17 @@ export default function ChatPanel() {
                 onKeyDown={handleKeyDown}
                 placeholder={UI_TEXT.INPUT_PLACEHOLDER}
                 maxLength={DEBATE_CONFIG.MAX_INPUT_CHARS}
-                rows={3}
+                rows={6}
                 style={{ 
                   width: "100%", 
-                  resize: "none"
+                  resize: "none",
+                  backgroundColor: "#ffe4e6", // Light pink
+                  color: "#000000",           // Black text
+                  fontSize: "1.5rem",         // ~Double size (assuming base is small/medium)
+                  lineHeight: "1.5",
+                  padding: "20px",            // Larger padding
+                  borderRadius: "12px",
+                  border: "2px solid #fda4af" // darker pink border
                 }}
               />
 

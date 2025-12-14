@@ -292,7 +292,7 @@ export const getTeacherNotices = async (teacherId: string, classCode: string | n
         collection(db, "notices"), 
         where("teacherId", "==", teacherId),
         orderBy("createdAt", "desc"),
-        limit(20) // Fetch strict limit or slightly more for memory filtering
+        limit(50) // Increased limit to ensure class-specific notices aren't pushed out by other classes' activity
     );
     const snap = await getDocs(q);
     const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Notice));

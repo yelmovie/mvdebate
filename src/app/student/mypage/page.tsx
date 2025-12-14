@@ -62,7 +62,7 @@ export default function StudentMyPage() {
   const myDebateRecordsMock: unknown[] = [];
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 text-slate-50">
+    <div className="w-full text-slate-50">
       {/* Profile Card */}
       <section style={{
           borderRadius: "1.5rem",
@@ -181,6 +181,6 @@ export default function StudentMyPage() {
           시범 운영 피드백 보내기
         </button>
       </section>
-    </main>
+    </div>
   );
 }

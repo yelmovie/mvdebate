@@ -23,9 +23,22 @@ const missingKeys = requiredKeys.filter(key => !config[key]);
 if (missingKeys.length > 0) {
   if (typeof window !== "undefined") {
     console.error(
-      `[Firebase Config] Missing required environment variables: ${missingKeys.join(", ")}. ` +
-      `Check your .env.local file.`
+      `[Firebase Config] Missing required environment variables: ${missingKeys.join(", ")}. \n` +
+      `If you are running locally, check your .env.local file.\n` +
+      `If you are deployed (e.g. Vercel), add these variables in your Project Settings.`
     );
+  }
+} else {
+  // Debug Verification
+  if (typeof window !== "undefined") {
+    console.log("[Firebase Config] Environment variables loaded successfully:", {
+      apiKey: !!config.apiKey,
+      authDomain: !!config.authDomain,
+      projectId: !!config.projectId,
+      storageBucket: !!config.storageBucket,
+      messagingSenderId: !!config.messagingSenderId,
+      appId: !!config.appId
+    });
   }
 }
 

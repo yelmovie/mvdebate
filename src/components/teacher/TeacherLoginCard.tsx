@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
-import { TeacherIcons, CommonIcons, iconStyles } from "../../lib/icons";
 import TrialBadge from "../common/TrialBadge";
+import { FaGoogle, FaChalkboardUser, FaRightFromBracket, FaCircleCheck } from "react-icons/fa6";
+import { HiSparkles } from "react-icons/hi2";
 import "./TeacherLoginCard.css";
 
 export default function TeacherLoginCard() {
@@ -31,155 +32,122 @@ export default function TeacherLoginCard() {
   }
 
   return (
-    <div className="teacher-login-wrapper">
-      <div className="teacher-login-card">
-        {/* Card Header */}
-        <div className="teacher-login-header">
-          <div style={{ marginBottom: "12px", display: "flex", justifyContent: "center" }}>
-            <TrialBadge />
-          </div>
-          <div className="teacher-login-badge">12월 체험 토론 기간 (24H 접근)</div>
-          <h1 className="teacher-login-title">
-            <TeacherIcons.Teacher 
-              className="inline-block mr-2 align-middle transition-all duration-200 hover:scale-105" 
-              size={24} 
-              color={iconStyles.color.primary} 
-            />
-            {user ? "환영합니다" : "선생님 입장"}
-          </h1>
-          <p className="teacher-login-subtitle">
-            {user 
-              ? <>반을 개설하고 학생 활동을 관리하세요.</>
-              : <>구글 계정으로 로그인하여 토론 수업을 시작하세요.</>
-            }
-          </p>
+    <div className="w-full">
+      {/* Header 제거 - 상위 컴포넌트에서 처리 */}
+      {!user && (
+        <div className="mb-6 text-center">
+          <TrialBadge />
         </div>
+      )}
 
-        {user ? (
-          /* Logged In State */
-          <div className="teacher-login-content">
-            {/* Welcome Message */}
-            <div className="teacher-login-welcome">
-              <p className="teacher-login-welcome-name">
-                <span className="text-violet-400">{getTeacherDisplayName()}</span> 선생님
-              </p>
-              <p className="teacher-login-welcome-text">대시보드에서 수업을 관리할 수 있습니다.</p>
-            </div>
-
-            {/* Dashboard Button */}
-            <button
-              onClick={() => router.push("/teacher/dashboard")}
-              className="teacher-login-button teacher-login-button--primary"
-            >
-              <TeacherIcons.Dashboard size={18} className="inline-block mr-2 align-middle" />
-              대시보드 입장하기
-            </button>
-
-            {/* Logout Link */}
-            <button
-              onClick={logout}
-              className="teacher-login-logout"
-            >
-              로그아웃
-            </button>
-          </div>
-        ) : (
-          /* Not Logged In State */
-          <div className="teacher-login-content">
-            {/* Agreement Checkboxes */}
-            <div className="teacher-login-agreement">
-              <label className="teacher-login-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={agreePrivacy}
-                  onChange={(e) => setAgreePrivacy(e.target.checked)}
-                  className="teacher-login-checkbox"
-                />
-                <span className="teacher-login-checkbox-text">
-                  개인정보 처리방침에 동의합니다{" "}
-                  <a
-                    href="/privacy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="teacher-login-link"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    (보기)
-                  </a>
-                </span>
-              </label>
-              <label className="teacher-login-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="teacher-login-checkbox"
-                />
-                <span className="teacher-login-checkbox-text">
-                  이용약관에 동의합니다{" "}
-                  <a
-                    href="/terms"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="teacher-login-link"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    (보기)
-                  </a>
-                </span>
-              </label>
-            </div>
-
-            {/* Google Login Button */}
-            <button
-              onClick={() => {
-                if (!agreePrivacy || !agreeTerms) {
-                  alert("개인정보 처리방침과 이용약관에 동의해주세요.");
-                  return;
-                }
-                loginWithGoogle();
-              }}
-              disabled={!agreePrivacy || !agreeTerms}
-              className="teacher-login-button teacher-login-button--primary"
-            >
-              <CommonIcons.Google size={20} color="#ffffff" />
-              구글 계정으로 시작하기
-            </button>
-
-            {isTrialMode && (
-              <>
-                <div className="teacher-login-divider">
-                  <div className="teacher-login-divider-line" />
-                  <span className="teacher-login-divider-text">OR</span>
-                  <div className="teacher-login-divider-line" />
-                </div>
-
-                <button
-                  onClick={() => {
-                    if (!agreePrivacy || !agreeTerms) {
-                      alert("개인정보 처리방침과 이용약관에 동의해주세요.");
-                      return;
-                    }
-                    loginAsGuestTeacher();
-                  }}
-                  disabled={!agreePrivacy || !agreeTerms}
-                  className="teacher-login-button teacher-login-button--secondary"
+      {user ? (
+        <div className="space-y-5 flex flex-col items-center">
+           <div className="w-full">
+             <div className="rounded-2xl p-5 text-center mb-6 landing-glass"
+               style={{ borderColor: "rgba(34,197,94,0.28)" }}
+             >
+               <div className="flex items-center justify-center gap-3 mb-2">
+                 <FaCircleCheck size={24} className="text-green-400" />
+                 <p className="text-white text-xl font-bold">현재 로그인 상태입니다</p>
+               </div>
+               <p className="text-sm leading-relaxed" style={{ color: "var(--landing-muted)" }}>
+                 대시보드로 이동하여 수업을 관리하세요
+               </p>
+             </div>
+             
+             <button
+                onClick={() => router.push("/teacher/dashboard")}
+                className="landing-primary-btn landing-focus flex items-center justify-center gap-2.5 mb-3"
+             >
+               <FaChalkboardUser size={18} className="shrink-0" />
+               <span>대시보드 입장</span>
+             </button>
+             <button
+                onClick={logout}
+                className="landing-focus w-full h-14 rounded-2xl flex items-center justify-center gap-2.5 text-sm font-semibold"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid var(--landing-border)",
+                  color: "var(--landing-text)",
+                }}
+             >
+               <FaRightFromBracket size={18} className="shrink-0" />
+               로그아웃
+             </button>
+           </div>
+        </div>
+      ) : (
+        <div className="space-y-6 flex flex-col items-center">
+           <div className="w-full">
+             {/* Agreements */}
+             <div className="space-y-3 mb-6">
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl landing-focus"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--landing-border)" }}
                 >
-                  🎁 체험하기 (로그인 없이)
-                </button>
-              </>
-            )}
-          </div>
-        )}
+                  <input 
+                     type="checkbox" 
+                     checked={agreePrivacy} 
+                     onChange={e => setAgreePrivacy(e.target.checked)}
+                     className="w-5 h-5 cursor-pointer" 
+                  />
+                  <span className="text-sm font-medium flex-1" style={{ color: "var(--landing-text)" }}>개인정보 처리방침 동의</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl landing-focus"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--landing-border)" }}
+                >
+                  <input 
+                     type="checkbox" 
+                     checked={agreeTerms} 
+                     onChange={e => setAgreeTerms(e.target.checked)}
+                     className="w-5 h-5 cursor-pointer" 
+                  />
+                  <span className="text-sm font-medium flex-1" style={{ color: "var(--landing-text)" }}>이용약관 동의</span>
+                </label>
+             </div>
 
-        {/* Privacy Notice - Same as Student */}
-        <div className="teacher-login-privacy">
-          본 서비스는 2025년 교육 실험 목적의 시범 운영 중이며<br />
-          교사 이메일 외의 개인정보는 저장하지 않습니다.<br />
-          시범 운영 종료 후 모든 데이터는 자동 삭제됩니다.
+             <button
+                onClick={() => {
+                  if (!agreePrivacy || !agreeTerms) return alert("약관에 동의해주세요.");
+                  loginWithGoogle();
+                }}
+                disabled={!agreePrivacy || !agreeTerms}
+                className="landing-primary-btn landing-focus flex items-center justify-center gap-2.5"
+             >
+               <FaGoogle size={18} className="shrink-0" />
+               <span>구글 계정으로 시작하기</span>
+             </button>
+
+             {isTrialMode && (
+               <>
+                 <div className="relative py-4">
+                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/20"></div></div>
+                   <div className="relative flex justify-center text-sm uppercase"><span className="bg-slate-950 px-4 text-white/50 font-bold">OR</span></div>
+                 </div>
+                 <button
+                    onClick={() => {
+                      if (!agreePrivacy || !agreeTerms) return alert("약관에 동의해주세요.");
+                      loginAsGuestTeacher();
+                    }}
+                    disabled={!agreePrivacy || !agreeTerms}
+                    className="landing-focus w-full h-14 rounded-2xl flex items-center justify-center gap-2.5 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid var(--landing-border)",
+                      color: "var(--landing-text)",
+                    }}
+                 >
+                   <HiSparkles size={18} style={{ color: "var(--landing-accent)" }} className="shrink-0" />
+                   <span>체험하기 (로그인 없이)</span>
+                 </button>
+               </>
+            )}
+           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
+
+
+
 

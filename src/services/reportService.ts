@@ -2,7 +2,7 @@ import { collection, addDoc, query, where, getDocs, orderBy, limit, doc, getDoc 
 import { db } from "../firebase";
 import { COLLECTIONS } from "../firebase/constants";
 import type { DebateReport } from "../types/schema";
-import { updateUserScore } from "./userService";
+import { updateStudentScore } from "./studentService";
 
 /**
  * Save a debate report to Firestore and trigger gamification (score update)
@@ -21,8 +21,9 @@ export const saveDebateReport = async (report: Omit<DebateReport, "id" | "create
     const { scores } = report;
     const totalStars = scores.total || (scores.claim + scores.evidence + scores.focus);
 
-    // 3. Update User Score & Check Level Up
-    const gamificationResult = await updateUserScore(report.studentId, totalStars);
+    // 3. Update Student Score & Check Level Up (Now using studentService)
+    // Note: Assuming report.studentId matches the format used in studentService (classCode-number)
+    const gamificationResult = await updateStudentScore(report.studentId, totalStars);
 
     return { 
       reportId: docRef.id, 

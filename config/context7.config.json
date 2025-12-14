@@ -1,0 +1,18 @@
+{
+  "libraries": [
+    "next",
+    "react",
+    "tailwindcss"
+  ],
+  "sources": {
+    "include": [
+      "https://nextjs.org/docs",
+      "https://react.dev",
+      "https://tailwindcss.com/docs"
+    ]
+  },
+  "indexing": {
+    "maxDepth": 2,
+    "ignorePatterns": ["node_modules", ".git"]
+  }
+}
