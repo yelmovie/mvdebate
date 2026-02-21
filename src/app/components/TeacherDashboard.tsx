@@ -63,6 +63,7 @@ export default function TeacherDashboard({ user, onLogout, demoMode = false, the
   const [studentEmail, setStudentEmail] = useState('');
   const [bulkStudentData, setBulkStudentData] = useState('');
   const [loading, setLoading] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
   useEffect(() => {
     loadClasses();
@@ -236,6 +237,30 @@ export default function TeacherDashboard({ user, onLogout, demoMode = false, the
     } catch (error: any) {
       console.error('Add student error:', error);
       showAlert(error.message || '학생 추가 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeleteStudent() {
+    if (!studentToDelete || !selectedClass) return;
+    setLoading(true);
+    try {
+      if (demoMode) {
+        setStudents(students.filter(s => s.id !== studentToDelete.id));
+        setStudentToDelete(null);
+        showAlert('학생이 삭제되었습니다.', 'success');
+        setLoading(false);
+        return;
+      }
+      await apiCall(`/classes/${selectedClass.id}/students/${studentToDelete.id}`, {
+        method: 'DELETE'
+      });
+      setStudents(students.filter(s => s.id !== studentToDelete.id));
+      setStudentToDelete(null);
+      showAlert('학생이 삭제되었습니다.', 'success');
+    } catch (error: any) {
+      showAlert(error.message || '학생 삭제에 실패했습니다.', 'error');
     } finally {
       setLoading(false);
     }
@@ -991,16 +1016,24 @@ export default function TeacherDashboard({ user, onLogout, demoMode = false, the
                     {students.map((student, index) => (
                       <div
                         key={student.id}
-                        className="bg-gradient-to-br from-muted to-white rounded-2xl p-4 border border-border hover:border-primary transition-all hover:shadow-soft"
+                        className="bg-gradient-to-br from-muted to-white rounded-2xl p-4 border border-border hover:border-primary transition-all hover:shadow-soft group relative"
                         style={{ animationDelay: `${1200 + index * 50}ms` }}
                       >
+                        {/* 삭제 버튼 */}
+                        <button
+                          onClick={() => setStudentToDelete(student)}
+                          className="absolute top-3 right-3 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                          title="학생 삭제"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                         <div className="flex items-center gap-3 mb-3">
                           <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-bold shadow-soft">
                             {student.name.charAt(0)}
                           </div>
-                          <div className="flex-1">
-                            <h4 className="font-bold text-text-primary">{student.name}</h4>
-                            <p className="text-xs text-text-secondary">{student.email}</p>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-text-primary truncate pr-6">{student.name}</h4>
+                            <p className="text-xs text-text-secondary truncate">{student.email}</p>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -1042,6 +1075,53 @@ export default function TeacherDashboard({ user, onLogout, demoMode = false, the
           )}
         </div>
       </div>
+
+      {/* Delete Student Confirmation Modal */}
+      {studentToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-strong animate-fade-in-up">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-text-primary">학생 삭제</h3>
+                <p className="text-sm text-text-secondary">{studentToDelete.name}</p>
+              </div>
+            </div>
+
+            {/* 경고 안내 박스 */}
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-5 space-y-2">
+              <p className="text-sm font-semibold text-red-700 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                삭제 시 아래 데이터가 함께 삭제됩니다
+              </p>
+              <ul className="text-sm text-red-600 space-y-1 pl-6 list-disc">
+                <li>모든 토론 기록 및 채팅 내용</li>
+                <li>AI 평가 점수 및 피드백</li>
+                <li>학생 계정 및 로그인 정보</li>
+              </ul>
+              <p className="text-xs text-red-500 font-semibold mt-2">⚠️ 이 작업은 되돌릴 수 없습니다.</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStudentToDelete(null)}
+                className="flex-1 px-6 py-3 bg-gray-100 text-text-secondary rounded-full hover:bg-gray-200 transition-colors font-semibold"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDeleteStudent}
+                disabled={loading}
+                className="flex-1 px-6 py-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors font-semibold disabled:opacity-50"
+              >
+                {loading ? '삭제 중...' : '삭제하기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Student Modal */}
       {showAddStudent && (
