@@ -2035,14 +2035,55 @@ app.post("/make-server-7273e82a/teacher/dashboard-data", async (c) => {
     const { classId, position } = await c.req.json();
     console.log('Fetching dashboard data:', { classId, position });
 
-    // Get class data
-    const classData = await kv.get(`class:${classId}`);
-    if (!classData || classData.teacherId !== user.id) {
-      return c.json({ error: 'Class not found or unauthorized' }, 403);
+    // classId가 'all'이거나 없는 경우: 교사의 모든 클래스를 대상으로 처리
+    let targetClassIds: string[] = [];
+    if (!classId || classId === 'all') {
+      targetClassIds = await kv.get(`teacher:${user.id}:classes`) || [];
+    } else {
+      // 특정 클래스: 해당 클래스가 이 교사의 것인지 검증
+      const classData = await kv.get(`class:${classId}`);
+      if (!classData || classData.teacherId !== user.id) {
+        return c.json({ error: 'Class not found or unauthorized' }, 403);
+      }
+      targetClassIds = [classId];
     }
 
-    // Get all students in the class
-    const studentIds = await kv.get(`class:${classId}:students`) || [];
+    // 교사에게 클래스가 없는 경우 빈 데이터 반환
+    if (targetClassIds.length === 0) {
+      return c.json({
+        students: [],
+        totalDebates: 0,
+        avgScore: 0,
+        activeStudents: 0,
+        totalStudents: 0,
+        avgTurns: 0,
+        trendData: Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - (6 - i));
+          return { name: `${d.getMonth() + 1}/${d.getDate()}`, debates: 0, participation: 0 };
+        }),
+        scoreDistribution: [
+          { name: '0-60점', value: 0, color: '#FF6B6B' },
+          { name: '60-80점', value: 0, color: '#FFD93D' },
+          { name: '80-100점', value: 0, color: '#6BCB77' }
+        ],
+        radarData: [
+          { subject: '논리성', score: 0, fullMark: 5 },
+          { subject: '근거 사용', score: 0, fullMark: 5 },
+          { subject: '주제 충실도', score: 0, fullMark: 5 },
+          { subject: '토론 예절', score: 0, fullMark: 5 },
+          { subject: '비판적 사고', score: 0, fullMark: 5 }
+        ]
+      });
+    }
+
+    // 모든 대상 클래스의 학생 ID를 중복 없이 수집
+    const studentIdSet = new Set<string>();
+    for (const cid of targetClassIds) {
+      const ids: string[] = await kv.get(`class:${cid}:students`) || [];
+      ids.forEach((id: string) => studentIdSet.add(id));
+    }
+    const studentIds = Array.from(studentIdSet);
     console.log('Students in class:', studentIds.length);
 
     const students: any[] = [];

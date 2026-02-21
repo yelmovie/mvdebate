@@ -32,12 +32,16 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
   const [searchQuery, setSearchQuery] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
   }, [selectedClass, selectedPosition]);
 
   async function loadData() {
+    setLoading(true);
+    setLoadError(null);
     if (demoMode) {
       // Mock student data
       setStudents([
@@ -75,6 +79,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
           { subject: '비판적 사고', score: 3.9, fullMark: 5 }
         ]
       });
+      setLoading(false);
       return;
     }
 
@@ -88,8 +93,33 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
       });
       setStudents(data.students || []);
       setDashboardData(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading data:', error);
+      setLoadError(error?.message || '데이터를 불러오는 중 오류가 발생했습니다.');
+      // 에러 시에도 빈 데이터 구조로 표시
+      setDashboardData({
+        students: [],
+        totalDebates: 0,
+        avgScore: 0,
+        activeStudents: 0,
+        totalStudents: 0,
+        avgTurns: 0,
+        trendData: [],
+        scoreDistribution: [
+          { name: '0-60점', value: 0, color: '#FF6B6B' },
+          { name: '60-80점', value: 0, color: '#FFD93D' },
+          { name: '80-100점', value: 0, color: '#6BCB77' }
+        ],
+        radarData: [
+          { subject: '논리성', score: 0, fullMark: 5 },
+          { subject: '근거 사용', score: 0, fullMark: 5 },
+          { subject: '주제 충실도', score: 0, fullMark: 5 },
+          { subject: '토론 예절', score: 0, fullMark: 5 },
+          { subject: '비판적 사고', score: 0, fullMark: 5 }
+        ]
+      });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -121,7 +151,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
     student.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (!dashboardData) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -132,11 +162,34 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
     );
   }
 
+  if (!dashboardData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="text-5xl mb-4">📊</div>
+          <p className="text-text-secondary font-medium">데이터를 불러올 수 없습니다.</p>
+          <button onClick={loadData} className="mt-4 px-6 py-2 bg-primary text-white rounded-xl font-medium hover:opacity-90">
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background blobs */}
       <div className="blob-bg absolute top-20 right-10 w-96 h-96 bg-primary"></div>
       <div className="blob-bg absolute bottom-20 left-10 w-80 h-80 bg-secondary"></div>
+
+      {/* 에러 배너 */}
+      {loadError && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-50 border border-red-200 text-red-700 px-6 py-3 rounded-xl shadow-md flex items-center gap-3 max-w-lg w-full">
+          <span className="text-lg">⚠️</span>
+          <span className="text-sm font-medium flex-1">{loadError}</span>
+          <button onClick={loadData} className="text-sm font-bold underline hover:no-underline">재시도</button>
+        </div>
+      )}
 
       <div className="relative z-10">
         {/* Header */}
