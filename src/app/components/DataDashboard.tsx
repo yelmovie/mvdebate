@@ -88,7 +88,30 @@ function StudentDetailModal({
     }
     try {
       const data = await apiCall(`/students/${student.id}/debates`);
-      setDebates(data.debates || []);
+      // 서버 응답 필드 정규화
+      const normalized = (data.debates || []).map((d: any) => ({
+        id: d.id,
+        topicTitle: d.topicTitle || d.topic || '토론 주제',
+        position: d.position || 'for',
+        status: d.status || 'completed',
+        createdAt: d.createdAt || d.date,
+        score: d.score ?? 0,
+        messageCount: d.messageCount ?? d.turns ?? 0,
+        duration: d.duration ?? 0,
+        feedback: d.feedback || d.evaluation?.overallFeedback || '',
+        evaluation: d.evaluation ? {
+          participationScore: d.evaluation.participationScore ?? d.participationScore ?? 0,
+          logicScore: d.evaluation.logicScore ?? d.logicScore ?? 0,
+          evidenceScore: d.evaluation.evidenceScore ?? d.evidenceScore ?? 0,
+          overallFeedback: d.evaluation.overallFeedback || d.feedback || '',
+        } : (d.participationScore > 0 ? {
+          participationScore: d.participationScore ?? 0,
+          logicScore: d.logicScore ?? 0,
+          evidenceScore: d.evidenceScore ?? 0,
+          overallFeedback: d.feedback || '',
+        } : null),
+      }));
+      setDebates(normalized);
     } catch {
       setDebates([]);
     } finally {
@@ -97,9 +120,12 @@ function StudentDetailModal({
   }
 
   const avgScore = debates
-    .filter(d => d.evaluation)
+    .filter(d => d.evaluation || d.score > 0)
     .reduce((sum, d, _, arr) => {
-      const s = (d.evaluation.participationScore + d.evaluation.logicScore + d.evaluation.evidenceScore) / 3;
+      const s = d.score > 0 ? d.score
+        : d.evaluation
+          ? Math.round((d.evaluation.participationScore + d.evaluation.logicScore + d.evaluation.evidenceScore) / 3)
+          : 0;
       return sum + s / arr.length;
     }, 0);
 
@@ -168,18 +194,26 @@ function StudentDetailModal({
               <div className="text-center py-8 text-text-secondary">아직 토론 기록이 없습니다.</div>
             ) : (
               <div className="space-y-3">
-                {debates.map((debate) => (
+                {debates.map((debate) => {
+                  const displayScore = debate.score > 0 ? debate.score
+                    : debate.evaluation
+                      ? Math.round((debate.evaluation.participationScore + debate.evaluation.logicScore + debate.evaluation.evidenceScore) / 3)
+                      : null;
+                  const feedbackText = debate.feedback || debate.evaluation?.overallFeedback || '';
+                  const dateStr = debate.createdAt || debate.date;
+
+                  return (
                   <div key={debate.id} className="bg-muted rounded-2xl p-4 border border-border">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-text-primary text-sm truncate">{debate.topicTitle}</p>
-                        <div className="flex items-center gap-2 mt-1">
+                        <p className="font-semibold text-text-primary text-sm truncate">{debate.topicTitle || '토론 주제'}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                            debate.position === 'for'
+                            debate.position === 'for' || debate.position === 'agree'
                               ? 'bg-green-100 text-green-700'
                               : 'bg-red-100 text-red-700'
                           }`}>
-                            {debate.position === 'for' ? '찬성' : '반대'}
+                            {debate.position === 'for' || debate.position === 'agree' ? '찬성' : '반대'}
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                             debate.status === 'completed'
@@ -188,27 +222,33 @@ function StudentDetailModal({
                           }`}>
                             {debate.status === 'completed' ? '완료' : '진행 중'}
                           </span>
-                          <span className="text-xs text-text-secondary flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {new Date(debate.createdAt).toLocaleDateString('ko-KR')}
-                          </span>
+                          {debate.messageCount > 0 && (
+                            <span className="text-xs text-text-secondary">
+                              발언 {debate.messageCount}개
+                            </span>
+                          )}
+                          {dateStr && (
+                            <span className="text-xs text-text-secondary flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(dateStr).toLocaleDateString('ko-KR')}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      {debate.evaluation && (
+                      {displayScore !== null && (
                         <div className="flex-shrink-0 text-right">
-                          <p className="text-lg font-bold text-primary">
-                            {Math.round((debate.evaluation.participationScore + debate.evaluation.logicScore + debate.evaluation.evidenceScore) / 3)}점
-                          </p>
+                          <p className="text-lg font-bold text-primary">{displayScore}점</p>
                         </div>
                       )}
                     </div>
-                    {debate.evaluation?.overallFeedback && (
-                      <p className="text-xs text-text-secondary mt-2 bg-white rounded-xl p-2 border border-border">
-                        💬 {debate.evaluation.overallFeedback}
+                    {feedbackText && (
+                      <p className="text-xs text-text-secondary mt-2 bg-white rounded-xl p-2 border border-border line-clamp-2">
+                        💬 {feedbackText}
                       </p>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

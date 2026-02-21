@@ -94,7 +94,23 @@ export default function StudentProgress({ onBack, demoMode = false, students, cl
       }
       
       const data = await apiCall(`/students/${studentId}/debates`);
-      setDebates(data.debates);
+      // 서버 응답 필드를 프론트 기대 형식으로 안전하게 정규화
+      const normalized = (data.debates || []).map((d: any) => ({
+        id: d.id,
+        topicTitle: d.topicTitle || d.topic || '토론 주제',
+        position: d.position || 'for',
+        character: d.character || d.characterName || '',
+        date: d.date || d.completedAt || d.createdAt,
+        duration: typeof d.duration === 'number' ? d.duration : Math.max(1, Math.round((d.messageCount || d.turns || 0) * 1.5)),
+        messageCount: d.messageCount ?? d.turns ?? 0,
+        score: d.score ?? 0,
+        participationScore: d.participationScore ?? d.evaluation?.participationScore ?? 0,
+        logicScore: d.logicScore ?? d.evaluation?.logicScore ?? 0,
+        persuasionScore: d.persuasionScore ?? d.evaluation?.evidenceScore ?? 0,
+        feedback: d.feedback || d.evaluation?.overallFeedback || '',
+        status: d.status || 'completed',
+      }));
+      setDebates(normalized);
     } catch (error) {
       console.error('Error loading student debates:', error);
     } finally {
@@ -264,14 +280,18 @@ export default function StudentProgress({ onBack, demoMode = false, students, cl
                           </span>
                           <span className="flex items-center gap-1 text-xs text-text-secondary">
                             <Calendar className="w-3 h-3" />
-                            {new Date(debate.date).toLocaleDateString('ko-KR')}
+                            {debate.date && !isNaN(new Date(debate.date).getTime())
+                              ? new Date(debate.date).toLocaleDateString('ko-KR')
+                              : '날짜 미상'}
                           </span>
                         </div>
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <div className="px-6 py-3 bg-gradient-accent rounded-full shadow-soft">
-                          <p className="text-3xl font-bold text-white">{debate.score}</p>
+                        <div className={`px-6 py-3 rounded-full shadow-soft ${debate.score > 0 ? 'bg-gradient-accent' : 'bg-gray-200'}`}>
+                          <p className={`text-3xl font-bold ${debate.score > 0 ? 'text-white' : 'text-gray-500'}`}>
+                            {debate.score > 0 ? `${debate.score}점` : (debate.status === 'completed' ? '평가중' : '진행중')}
+                          </p>
                         </div>
                       </div>
                     </div>
