@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, Download, FileText, Table, 
-  FileSpreadsheet, CheckCircle, Calendar, Users,
-  TrendingUp, MessageSquare, Trophy, Clock
+  ArrowLeft, Download, FileText, CheckCircle, Calendar,
+  Users, TrendingUp, MessageSquare, Trophy, Clock
 } from 'lucide-react';
 import { apiCall } from '../../utils/supabase';
 import { useAlert } from './AlertProvider';
@@ -12,71 +11,55 @@ interface DataExportProps {
   demoMode?: boolean;
 }
 
-type ExportFormat = 'csv' | 'excel' | 'pdf' | 'json';
 type ExportType = 'students' | 'debates' | 'scores' | 'activity' | 'full';
 
 export default function DataExport({ onBack, demoMode = false }: DataExportProps) {
   const { showAlert } = useAlert();
-  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('csv');
   const [selectedType, setSelectedType] = useState<ExportType>('students');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [loading, setLoading] = useState(false);
   const [exportHistory, setExportHistory] = useState([
-    { id: '1', type: '학생 명단', format: 'CSV', date: '2026-02-15 14:30', size: '45 KB' },
-    { id: '2', type: '토론 기록', format: 'Excel', date: '2026-02-14 09:15', size: '128 KB' },
-    { id: '3', type: '전체 데이터', format: 'PDF', date: '2026-02-10 16:45', size: '2.3 MB' }
+    { id: '1', type: '학생 명단', date: '2026-02-15 14:30', size: '820 KB' },
+    { id: '2', type: '토론 기록', date: '2026-02-14 09:15', size: '1.2 MB' },
+    { id: '3', type: '전체 데이터', date: '2026-02-10 16:45', size: '2.3 MB' }
   ]);
 
-  async function handleExport() {
-    if (!selectedFormat || !selectedType) {
-      showAlert('내보내기 형식과 데이터 유형을 선택해주세요.', 'error');
-      return;
-    }
+  const typeNames: Record<ExportType, string> = {
+    students: '학생 명단',
+    debates: '토론 기록',
+    scores: '점수 데이터',
+    activity: '활동 내역',
+    full: '전체 데이터'
+  };
 
+  async function handleExport() {
     setLoading(true);
     try {
       if (demoMode) {
-        // Simulate export
         await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        const typeNames: Record<ExportType, string> = {
-          students: '학생 명단',
-          debates: '토론 기록',
-          scores: '점수 데이터',
-          activity: '활동 내역',
-          full: '전체 데이터'
-        };
-        
         const newExport = {
           id: Date.now().toString(),
           type: typeNames[selectedType],
-          format: selectedFormat.toUpperCase(),
-          date: new Date().toLocaleString('ko-KR', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit' 
+          date: new Date().toLocaleString('ko-KR', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit'
           }),
-          size: `${Math.floor(Math.random() * 500) + 50} KB`
+          size: `${Math.floor(Math.random() * 1500) + 300} KB`
         };
-        
         setExportHistory([newExport, ...exportHistory]);
-        showAlert(`${typeNames[selectedType]} 데이터가 ${selectedFormat.toUpperCase()} 형식으로 내보내기 되었습니다.`, 'success');
+        showAlert(`${typeNames[selectedType]} PDF가 성공적으로 내보내기 되었습니다.`, 'success');
         setLoading(false);
         return;
       }
 
       const params = new URLSearchParams({
-        format: selectedFormat,
+        format: 'pdf',
         type: selectedType,
         ...(dateRange.start && { startDate: dateRange.start }),
         ...(dateRange.end && { endDate: dateRange.end })
       });
 
       const response = await apiCall(`/teacher/export?${params.toString()}`);
-      
-      // Create download link
       const blob = new Blob([response.data], { type: response.contentType });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -87,10 +70,10 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      showAlert('데이터가 성공적으로 내보내기 되었습니다.', 'success');
+      showAlert('PDF가 성공적으로 내보내기 되었습니다.', 'success');
     } catch (error: any) {
       console.error('Export error:', error);
-      showAlert(error.message || '데이터 내보내기에 실패했습니다.', 'error');
+      showAlert(error.message || 'PDF 내보내기에 실패했습니다.', 'error');
     } finally {
       setLoading(false);
     }
@@ -134,40 +117,8 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
     }
   ];
 
-  const formatOptions = [
-    {
-      format: 'csv' as ExportFormat,
-      title: 'CSV',
-      description: 'Excel과 호환되는 표 형식',
-      icon: Table,
-      recommended: '간단한 데이터 분석에 적합'
-    },
-    {
-      format: 'excel' as ExportFormat,
-      title: 'Excel',
-      description: 'Microsoft Excel 파일',
-      icon: FileSpreadsheet,
-      recommended: '상세한 데이터 분석에 최적'
-    },
-    {
-      format: 'pdf' as ExportFormat,
-      title: 'PDF',
-      description: '인쇄 및 공유에 적합한 문서',
-      icon: FileText,
-      recommended: '보고서 형태로 보관'
-    },
-    {
-      format: 'json' as ExportFormat,
-      title: 'JSON',
-      description: '프로그래밍 처리가 가능한 형식',
-      icon: FileText,
-      recommended: '개발자 또는 시스템 연동'
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background blobs */}
       <div className="blob-bg absolute top-20 right-10 w-96 h-96 bg-secondary"></div>
       <div className="blob-bg absolute bottom-20 left-10 w-80 h-80 bg-primary"></div>
 
@@ -183,13 +134,18 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                 <ArrowLeft className="w-6 h-6 text-text-secondary" />
               </button>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-secondary rounded-2xl flex items-center justify-center shadow-soft">
+                <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-soft">
                   <Download className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-text-primary">데이터 내보내기</h1>
-                  <p className="text-sm text-text-secondary">학급 데이터를 파일로 저장하세요</p>
+                  <p className="text-sm text-text-secondary">학급 데이터를 PDF로 저장하세요</p>
                 </div>
+              </div>
+              {/* PDF 뱃지 */}
+              <div className="ml-auto flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
+                <FileText className="w-4 h-4 text-primary" />
+                <span className="text-sm font-bold text-primary">PDF 형식</span>
               </div>
             </div>
           </div>
@@ -197,15 +153,15 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Left Column - Export Options */}
+            {/* Left Column */}
             <div className="lg:col-span-2 space-y-6">
+
               {/* Data Type Selection */}
               <div className="bg-white rounded-3xl p-6 shadow-soft border-2 border-border animate-fade-in-up">
                 <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-secondary" />
                   내보낼 데이터 선택
                 </h3>
-                
                 <div className="grid gap-3">
                   {exportOptions.map((option) => {
                     const Icon = option.icon;
@@ -239,55 +195,15 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                 </div>
               </div>
 
-              {/* Format Selection */}
+              {/* Date Range Selection */}
               <div className="bg-white rounded-3xl p-6 shadow-soft border-2 border-border animate-fade-in-up" style={{ animationDelay: '100ms' }}>
                 <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
-                  <FileSpreadsheet className="w-5 h-5 text-primary" />
-                  파일 형식 선택
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {formatOptions.map((option) => {
-                    const Icon = option.icon;
-                    return (
-                      <button
-                        key={option.format}
-                        onClick={() => setSelectedFormat(option.format)}
-                        className={`p-4 rounded-2xl border-2 transition-all text-left ${
-                          selectedFormat === option.format
-                            ? 'border-primary bg-primary/5 shadow-medium'
-                            : 'border-border hover:border-primary/50 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 mb-2">
-                          <Icon className={`w-6 h-6 ${
-                            selectedFormat === option.format ? 'text-primary' : 'text-gray-400'
-                          }`} />
-                          <h4 className="font-bold text-text-primary">{option.title}</h4>
-                          {selectedFormat === option.format && (
-                            <CheckCircle className="w-5 h-5 text-primary ml-auto" />
-                          )}
-                        </div>
-                        <p className="text-xs text-text-secondary mb-1">{option.description}</p>
-                        <p className="text-xs text-primary font-semibold">💡 {option.recommended}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Date Range Selection */}
-              <div className="bg-white rounded-3xl p-6 shadow-soft border-2 border-border animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-                <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-accent" />
-                  기간 설정 (선택사항)
+                  기간 설정 <span className="text-sm font-normal text-text-secondary">(선택사항)</span>
                 </h3>
-                
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-text-secondary mb-2">
-                      시작일
-                    </label>
+                    <label className="block text-sm font-semibold text-text-secondary mb-2">시작일</label>
                     <input
                       type="date"
                       value={dateRange.start}
@@ -296,9 +212,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-text-secondary mb-2">
-                      종료일
-                    </label>
+                    <label className="block text-sm font-semibold text-text-secondary mb-2">종료일</label>
                     <input
                       type="date"
                       value={dateRange.end}
@@ -307,7 +221,6 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                     />
                   </div>
                 </div>
-                
                 {dateRange.start && dateRange.end && (
                   <div className="mt-4 p-3 bg-accent/10 rounded-2xl">
                     <p className="text-sm text-accent font-semibold">
@@ -321,94 +234,69 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
               <button
                 onClick={handleExport}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-gradient-secondary text-white rounded-full hover:shadow-glow transition-all font-bold text-lg shadow-medium disabled:opacity-50 animate-fade-in-up"
-                style={{ animationDelay: '300ms' }}
+                className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-gradient-primary text-white rounded-full hover:shadow-glow transition-all font-bold text-lg shadow-medium disabled:opacity-50 animate-fade-in-up"
+                style={{ animationDelay: '200ms' }}
               >
                 <Download className="w-6 h-6" />
-                {loading ? '내보내기 중...' : '데이터 내보내기'}
+                {loading ? 'PDF 생성 중...' : 'PDF로 내보내기'}
               </button>
             </div>
 
-            {/* Right Column - Export History & Info */}
+            {/* Right Column */}
             <div className="space-y-6">
-              {/* Quick Stats */}
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl p-6 border-2 border-blue-200 shadow-soft animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+              {/* PDF 안내 카드 */}
+              <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl p-6 border-2 border-primary/20 shadow-soft animate-fade-in-up">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
                     <FileText className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="font-bold text-blue-900">내보내기 통계</h3>
+                  <h3 className="font-bold text-text-primary">PDF 내보내기</h3>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-blue-700">총 내보내기 횟수</span>
-                    <span className="text-2xl font-bold text-blue-900">{exportHistory.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-blue-700">가장 최근 내보내기</span>
-                    <span className="text-sm font-semibold text-blue-900">
-                      {exportHistory[0]?.date.split(' ')[0]}
-                    </span>
-                  </div>
-                </div>
+                <ul className="space-y-3 text-sm text-text-secondary">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5 font-bold">✓</span>
+                    <span>인쇄 및 공유에 최적화된 문서 형식</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5 font-bold">✓</span>
+                    <span>보고서 형태로 보관 및 제출 가능</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5 font-bold">✓</span>
+                    <span>어떤 기기에서도 동일하게 표시</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5 font-bold">✓</span>
+                    <span>학부모 상담 자료로 활용 가능</span>
+                  </li>
+                </ul>
               </div>
 
               {/* Export History */}
-              <div className="bg-white rounded-3xl p-6 shadow-soft border-2 border-border animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+              <div className="bg-white rounded-3xl p-6 shadow-soft border-2 border-border animate-fade-in-up" style={{ animationDelay: '100ms' }}>
                 <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-primary" />
                   내보내기 기록
                 </h3>
-                
                 <div className="space-y-3">
                   {exportHistory.map((item) => (
-                    <div 
+                    <div
                       key={item.id}
                       className="p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
                     >
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start justify-between mb-1">
                         <div className="flex-1">
                           <h4 className="font-semibold text-text-primary text-sm">{item.type}</h4>
                           <p className="text-xs text-text-secondary">{item.date}</p>
                         </div>
                         <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold">
-                          {item.format}
+                          PDF
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-text-secondary">{item.size}</span>
-                        <button className="text-xs text-primary hover:text-primary/80 font-semibold">
-                          다시 다운로드
-                        </button>
-                      </div>
+                      <span className="text-xs text-text-secondary">{item.size}</span>
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Tips */}
-              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-3xl p-6 border-2 border-yellow-200 shadow-soft animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-                <h3 className="font-bold text-yellow-900 mb-3 flex items-center gap-2">
-                  💡 내보내기 팁
-                </h3>
-                <ul className="space-y-2 text-sm text-yellow-800">
-                  <li className="flex items-start gap-2">
-                    <span className="text-yellow-600 mt-0.5">•</span>
-                    <span>CSV는 Excel에서 바로 열 수 있어요</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-yellow-600 mt-0.5">•</span>
-                    <span>PDF는 인쇄나 공유에 적합해요</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-yellow-600 mt-0.5">•</span>
-                    <span>정기적으로 백업하는 것을 추천해요</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-yellow-600 mt-0.5">•</span>
-                    <span>Excel 형식은 차트와 그래프 작성에 유용해요</span>
-                  </li>
-                </ul>
               </div>
             </div>
           </div>
