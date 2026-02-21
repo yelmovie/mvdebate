@@ -122,11 +122,10 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
     setDownloading(true);
 
     try {
-      // Wait a bit to ensure all styles are applied
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       const element = reportRef.current;
-      
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -135,274 +134,67 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
         backgroundColor: '#ffffff',
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
-        ignoreElements: (el) => {
-          // Skip elements with animations
-          return el.classList.contains('animate-confetti');
-        },
+        ignoreElements: (el) => el.classList.contains('animate-confetti'),
         onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.body;
-          
-          // Comprehensive color mapping from oklch/oklab approximations to RGB
-          const colorMap: { [key: string]: string } = {
-            // Primary colors (coral orange shades)
-            'oklch(0.901 0.076 70.697)': '#FF8C69',
-            'oklch(0.553 0.195 38.402)': '#FF8C69',
-            // Secondary colors (mint green shades)
-            'oklch(0.925 0.084 155.995)': '#7DD3C0',
-            'oklch(0.723 0.219 149.579)': '#7DD3C0',
-            // Accent colors (sunflower yellow shades)
-            'oklch(0.945 0.129 101.54)': '#FFD93D',
-            'oklch(0.554 0.135 66.442)': '#FFD93D',
-            // Purple shades
-            'oklch(0.882 0.059 254.128)': '#A78BFA',
-            'oklch(0.623 0.214 259.815)': '#A78BFA',
-            // Background/transparent whites
-            'oklab(0.999994 0.0000455677 0.0000200868 / 0.8)': 'rgba(255, 255, 255, 0.8)',
-            'oklab(0.758371 0.117152 0.0905613 / 0.2)': 'rgba(255, 140, 105, 0.2)',
-          };
-          
-          // Helper function to check if a color string contains unsupported functions
-          const hasUnsupportedColor = (colorStr: string): boolean => {
-            if (!colorStr) return false;
-            return /oklch\(|oklab\(|color-mix\(|lch\(|lab\(/i.test(colorStr);
-          };
-          
-          // Helper function to convert color to safe format
-          const convertToSafeColor = (colorStr: string): string => {
-            if (!colorStr || colorStr === 'rgba(0, 0, 0, 0)') return '';
-            
-            // Check if we have a direct mapping for this color
-            if (colorMap[colorStr]) {
-              return colorMap[colorStr];
-            }
-            
-            // If it contains unsupported color functions, try to infer the color
-            if (hasUnsupportedColor(colorStr)) {
-              console.warn('Unsupported color format detected:', colorStr);
-              
-              // Try to extract lightness/chroma/hue or lab values to make better guesses
-              // oklch format: oklch(L C H / alpha)
-              const oklchMatch = colorStr.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)/);
-              if (oklchMatch) {
-                const lightness = parseFloat(oklchMatch[1]);
-                const chroma = parseFloat(oklchMatch[2]);
-                const hue = parseFloat(oklchMatch[3]);
-                const alpha = oklchMatch[4] ? parseFloat(oklchMatch[4]) : 1;
-                
-                // Rough approximation based on hue ranges
-                if (hue >= 30 && hue <= 90) {
-                  // Orange/Yellow range
-                  if (chroma > 0.1) return lightness > 0.7 ? '#FFD93D' : '#FF8C69';
-                  return lightness > 0.5 ? '#FFF8F5' : '#2D3748';
-                } else if (hue >= 130 && hue <= 180) {
-                  // Green range
-                  if (chroma > 0.1) return '#7DD3C0';
-                  return lightness > 0.5 ? '#FAFBFC' : '#2D3748';
-                } else if (hue >= 240 && hue <= 280) {
-                  // Purple/Blue range
-                  return chroma > 0.1 ? '#A78BFA' : (lightness > 0.5 ? '#F7FAFC' : '#2D3748');
+          // 스타일시트에서 oklab/oklch 색상 함수 규칙을 모두 제거
+          const sheets = Array.from(clonedDoc.styleSheets);
+          sheets.forEach((sheet) => {
+            try {
+              const rules = Array.from(sheet.cssRules || []);
+              rules.forEach((rule: any) => {
+                if (rule.style) {
+                  const propsToCheck = ['color', 'background-color', 'border-color', 'outline-color', 'fill', 'stroke'];
+                  propsToCheck.forEach((prop) => {
+                    const val = rule.style.getPropertyValue(prop);
+                    if (val && /oklab\(|oklch\(|color-mix\(/i.test(val)) {
+                      rule.style.removeProperty(prop);
+                    }
+                  });
+                  // CSS 변수 선언에서도 제거
+                  if (rule.style.cssText && /oklab\(|oklch\(|color-mix\(/i.test(rule.style.cssText)) {
+                    const varPattern = /--([\w-]+)\s*:\s*(?:oklab|oklch|color-mix)\([^;]+;/gi;
+                    rule.style.cssText = rule.style.cssText.replace(varPattern, '');
+                  }
                 }
-                
-                // Default based on lightness
-                if (lightness > 0.9) return '#FFFFFF';
-                if (lightness > 0.7) return '#F7FAFC';
-                if (lightness > 0.5) return '#718096';
-                return '#2D3748';
-              }
-              
-              // oklab format: oklab(L a b / alpha)
-              const oklabMatch = colorStr.match(/oklab\(([\d.]+)\s+([-\d.]+)\s+([-\d.]+)(?:\s*\/\s*([\d.]+))?\)/);
-              if (oklabMatch) {
-                const lightness = parseFloat(oklabMatch[1]);
-                const a = parseFloat(oklabMatch[2]);
-                const b = parseFloat(oklabMatch[3]);
-                const alpha = oklabMatch[4] ? parseFloat(oklabMatch[4]) : 1;
-                
-                // Check if it's mostly white/transparent
-                if (lightness > 0.95 && Math.abs(a) < 0.01 && Math.abs(b) < 0.01) {
-                  return alpha < 1 ? `rgba(255, 255, 255, ${alpha})` : '#FFFFFF';
-                }
-                
-                // Check for warm colors (positive a and b)
-                if (a > 0.05 && b > 0.05) {
-                  return alpha < 1 ? `rgba(255, 140, 105, ${alpha})` : '#FF8C69';
-                }
-                
-                // Default based on lightness
-                if (lightness > 0.9) return '#FFFFFF';
-                if (lightness > 0.5) return '#718096';
-                return '#2D3748';
-              }
-              
-              // Fallback to a neutral color
-              return 'rgb(128, 128, 128)';
+              });
+            } catch {
+              // cross-origin 시트는 무시
             }
-            
-            return colorStr;
-          };
-          
-          // Remove all oklch/oklab/color-mix styles by replacing with inline RGB
-          const allElements = clonedElement.querySelectorAll('*');
-          allElements.forEach((el: any) => {
-            // Get computed style from the original element in the DOM
-            const originalEl = element.querySelector(`[data-id="${el.dataset?.id}"]`) || 
-                               Array.from(element.querySelectorAll('*'))[Array.from(allElements).indexOf(el)];
-            
-            // Force inline styles to override any problematic computed styles
-            const computedStyle = originalEl ? window.getComputedStyle(originalEl) : null;
-            
-            // CRITICAL: Force set ALL color properties to prevent oklch/oklab from being used
-            // Background colors - check computed style first
-            if (computedStyle) {
-              const bgColor = computedStyle.backgroundColor;
-              if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)') {
-                const safeColor = convertToSafeColor(bgColor);
-                if (safeColor) {
-                  el.style.setProperty('background-color', safeColor, 'important');
-                }
-              }
+          });
+
+          // 모든 엘리먼트에 인라인으로 안전한 색상 강제 적용
+          const allEls = Array.from(clonedDoc.querySelectorAll('*')) as HTMLElement[];
+          const originalEls = Array.from(element.querySelectorAll('*')) as HTMLElement[];
+
+          allEls.forEach((el, i) => {
+            const orig = originalEls[i];
+            if (!orig) return;
+
+            const cs = window.getComputedStyle(orig);
+
+            const safeBg = cs.backgroundColor;
+            if (safeBg && safeBg !== 'rgba(0, 0, 0, 0)') {
+              el.style.setProperty('background-color', safeBg, 'important');
             }
-            
-            // Fallback background color mapping based on classes
-            if (el.classList.contains('bg-gradient-primary')) {
-              el.style.backgroundColor = '#FF8C69';
-              el.style.backgroundImage = 'none';
+
+            const safeColor = cs.color;
+            if (safeColor) {
+              el.style.setProperty('color', safeColor, 'important');
             }
-            if (el.classList.contains('bg-gradient-secondary')) {
-              el.style.backgroundColor = '#7DD3C0';
-              el.style.backgroundImage = 'none';
+
+            const safeBorder = cs.borderColor;
+            if (safeBorder) {
+              el.style.setProperty('border-color', safeBorder, 'important');
             }
-            if (el.classList.contains('bg-gradient-accent')) {
-              el.style.backgroundColor = '#FFD93D';
-              el.style.backgroundImage = 'none';
-            }
-            if (el.classList.contains('bg-white')) {
-              el.style.backgroundColor = '#FFFFFF';
-            }
-            if (el.classList.contains('bg-background')) {
-              el.style.backgroundColor = '#FAFBFC';
-            }
-            if (el.classList.contains('bg-gray-100')) {
-              el.style.backgroundColor = '#f3f4f6';
-            }
-            if (el.classList.contains('bg-gray-200')) {
-              el.style.backgroundColor = '#e5e7eb';
-            }
-            if (el.classList.contains('bg-green-500')) {
-              el.style.backgroundColor = '#22c55e';
-            }
-            if (el.classList.contains('bg-blue-500')) {
-              el.style.backgroundColor = '#3b82f6';
-            }
-            
-            // Replace gradient backgrounds
-            if (el.className && el.className.includes && el.className.includes('from-')) {
-              el.style.backgroundImage = 'none';
-              if (el.classList.contains('from-green-50')) {
-                el.style.backgroundColor = '#DCFCE7';
-              }
-              if (el.classList.contains('from-yellow-50')) {
-                el.style.backgroundColor = '#FEF9C3';
-              }
-              if (el.classList.contains('from-orange-50')) {
-                el.style.backgroundColor = '#FFEDD5';
-              }
-              if (el.classList.contains('from-blue-50')) {
-                el.style.backgroundColor = '#EFF6FF';
-              }
-              if (el.classList.contains('from-primary')) {
-                el.style.backgroundColor = '#FF8C69';
-              }
-            }
-            
-            // Text colors
-            if (computedStyle) {
-              const textColor = computedStyle.color;
-              if (textColor) {
-                const safeColor = convertToSafeColor(textColor);
-                if (safeColor) {
-                  el.style.setProperty('color', safeColor, 'important');
-                }
-              }
-            }
-            
-            // Fallback text color mapping
-            if (el.classList.contains('text-green-700')) {
-              el.style.color = '#15803d';
-            }
-            if (el.classList.contains('text-yellow-700')) {
-              el.style.color = '#a16207';
-            }
-            if (el.classList.contains('text-orange-700')) {
-              el.style.color = '#c2410c';
-            }
-            if (el.classList.contains('text-green-500')) {
-              el.style.color = '#22c55e';
-            }
-            if (el.classList.contains('text-blue-500')) {
-              el.style.color = '#3b82f6';
-            }
-            if (el.classList.contains('text-primary')) {
-              el.style.color = '#FF8C69';
-            }
-            if (el.classList.contains('text-white')) {
-              el.style.color = '#FFFFFF';
-            }
-            if (el.classList.contains('text-text-primary')) {
-              el.style.color = '#111827';
-            }
-            if (el.classList.contains('text-text-secondary')) {
-              el.style.color = '#6B7280';
-            }
-            if (el.classList.contains('text-gray-500')) {
-              el.style.color = '#6B7280';
-            }
-            
-            // Border colors
-            if (computedStyle) {
-              const borderColor = computedStyle.borderColor;
-              if (borderColor) {
-                const safeColor = convertToSafeColor(borderColor);
-                if (safeColor) {
-                  el.style.setProperty('border-color', safeColor, 'important');
-                }
-              }
-            }
-            
-            // Fallback border colors
-            if (el.classList.contains('border-green-200')) {
-              el.style.borderColor = '#bbf7d0';
-            }
-            if (el.classList.contains('border-yellow-200')) {
-              el.style.borderColor = '#fef08a';
-            }
-            if (el.classList.contains('border-orange-200')) {
-              el.style.borderColor = '#fed7aa';
-            }
-            if (el.classList.contains('border-blue-200')) {
-              el.style.borderColor = '#bfdbfe';
-            }
-            if (el.classList.contains('border-primary')) {
-              el.style.borderColor = '#FF8C69';
-            }
-            if (el.classList.contains('border-border')) {
-              el.style.borderColor = '#e5e7eb';
-            }
-            
-            // Force override any remaining problematic styles
-            const inlineStyle = el.getAttribute('style') || '';
-            if (hasUnsupportedColor(inlineStyle)) {
-              // Remove the problematic inline styles
-              el.style.backgroundColor = el.style.backgroundColor || '#FFFFFF';
-              el.style.color = el.style.color || '#111827';
-            }
-            
-            // Remove animations and transitions
+
+            // 그라디언트 제거 (oklab 포함 가능)
+            el.style.setProperty('background-image', 'none', 'important');
+
+            // 애니메이션 제거
             el.style.animation = 'none';
             el.style.transition = 'none';
-            el.style.transform = 'none';
           });
-        }
+        },
       });
 
       const imgData = canvas.toDataURL('image/png');

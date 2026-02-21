@@ -120,107 +120,9 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
 
     try {
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       const element = reportRef.current;
-      
-      // Create a temporary style element to force all colors to safe RGB values
-      const styleElement = document.createElement('style');
-      styleElement.textContent = `
-        /* Force all elements in the report to use safe colors */
-        [data-pdf-export] * {
-          color: inherit !important;
-        }
-        [data-pdf-export] {
-          background: #ffffff !important;
-        }
-        [data-pdf-export] .bg-gradient-primary,
-        [data-pdf-export] .from-yellow-400,
-        [data-pdf-export] .to-yellow-600 {
-          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
-        }
-        [data-pdf-export] .from-gray-300,
-        [data-pdf-export] .to-gray-500 {
-          background: linear-gradient(135deg, #d1d5db 0%, #6b7280 100%) !important;
-        }
-        [data-pdf-export] .from-orange-400,
-        [data-pdf-export] .to-orange-600 {
-          background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%) !important;
-        }
-        [data-pdf-export] .from-blue-400,
-        [data-pdf-export] .to-blue-600,
-        [data-pdf-export] .from-blue-50,
-        [data-pdf-export] .to-blue-100 {
-          background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%) !important;
-        }
-        [data-pdf-export] .from-purple-400,
-        [data-pdf-export] .to-purple-600,
-        [data-pdf-export] .from-purple-50,
-        [data-pdf-export] .to-purple-100 {
-          background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%) !important;
-        }
-        [data-pdf-export] .from-green-400,
-        [data-pdf-export] .to-green-600,
-        [data-pdf-export] .from-green-50,
-        [data-pdf-export] .to-green-100,
-        [data-pdf-export] .from-green-500 {
-          background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%) !important;
-        }
-        [data-pdf-export] .from-pink-50,
-        [data-pdf-export] .to-pink-100,
-        [data-pdf-export] .from-pink-400,
-        [data-pdf-export] .to-pink-500 {
-          background: linear-gradient(135deg, #f9a8d4 0%, #ec4899 100%) !important;
-        }
-        [data-pdf-export] .text-blue-700 {
-          color: #1d4ed8 !important;
-        }
-        [data-pdf-export] .text-purple-700 {
-          color: #7e22ce !important;
-        }
-        [data-pdf-export] .text-green-700,
-        [data-pdf-export] .text-green-600 {
-          color: #15803d !important;
-        }
-        [data-pdf-export] .text-pink-700,
-        [data-pdf-export] .text-pink-600 {
-          color: #db2777 !important;
-        }
-        [data-pdf-export] .text-yellow-500 {
-          color: #eab308 !important;
-        }
-        [data-pdf-export] .text-gray-400 {
-          color: #9ca3af !important;
-        }
-        [data-pdf-export] .text-orange-600 {
-          color: #ea580c !important;
-        }
-        [data-pdf-export] .text-white {
-          color: #ffffff !important;
-        }
-        [data-pdf-export] .border-blue-200 {
-          border-color: #bfdbfe !important;
-        }
-        [data-pdf-export] .border-purple-200 {
-          border-color: #e9d5ff !important;
-        }
-        [data-pdf-export] .border-green-200 {
-          border-color: #bbf7d0 !important;
-        }
-        [data-pdf-export] .border-pink-200 {
-          border-color: #fbcfe8 !important;
-        }
-        [data-pdf-export] .bg-gray-200 {
-          background-color: #e5e7eb !important;
-        }
-        [data-pdf-export] .bg-white {
-          background-color: #ffffff !important;
-        }
-      `;
-      document.head.appendChild(styleElement);
-      
-      // Mark the element for PDF export
-      element.setAttribute('data-pdf-export', 'true');
-      
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -229,15 +131,63 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
         backgroundColor: '#ffffff',
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
-        ignoreElements: (el) => {
-          // Ignore any elements that might have problematic styles
-          return false;
-        }
+        onclone: (clonedDoc) => {
+          // 스타일시트에서 oklab/oklch 색상 함수 규칙을 모두 제거
+          const sheets = Array.from(clonedDoc.styleSheets);
+          sheets.forEach((sheet) => {
+            try {
+              const rules = Array.from(sheet.cssRules || []);
+              rules.forEach((rule: any) => {
+                if (rule.style) {
+                  const propsToCheck = ['color', 'background-color', 'border-color', 'outline-color', 'fill', 'stroke'];
+                  propsToCheck.forEach((prop) => {
+                    const val = rule.style.getPropertyValue(prop);
+                    if (val && /oklab\(|oklch\(|color-mix\(/i.test(val)) {
+                      rule.style.removeProperty(prop);
+                    }
+                  });
+                  if (rule.style.cssText && /oklab\(|oklch\(|color-mix\(/i.test(rule.style.cssText)) {
+                    const varPattern = /--([\w-]+)\s*:\s*(?:oklab|oklch|color-mix)\([^;]+;/gi;
+                    rule.style.cssText = rule.style.cssText.replace(varPattern, '');
+                  }
+                }
+              });
+            } catch {
+              // cross-origin 시트는 무시
+            }
+          });
+
+          // 모든 엘리먼트에 인라인으로 안전한 색상 강제 적용
+          const allEls = Array.from(clonedDoc.querySelectorAll('*')) as HTMLElement[];
+          const originalEls = Array.from(element.querySelectorAll('*')) as HTMLElement[];
+
+          allEls.forEach((el, i) => {
+            const orig = originalEls[i];
+            if (!orig) return;
+
+            const cs = window.getComputedStyle(orig);
+
+            const safeBg = cs.backgroundColor;
+            if (safeBg && safeBg !== 'rgba(0, 0, 0, 0)') {
+              el.style.setProperty('background-color', safeBg, 'important');
+            }
+
+            const safeColor = cs.color;
+            if (safeColor) {
+              el.style.setProperty('color', safeColor, 'important');
+            }
+
+            const safeBorder = cs.borderColor;
+            if (safeBorder) {
+              el.style.setProperty('border-color', safeBorder, 'important');
+            }
+
+            el.style.setProperty('background-image', 'none', 'important');
+            el.style.animation = 'none';
+            el.style.transition = 'none';
+          });
+        },
       });
-      
-      // Clean up
-      element.removeAttribute('data-pdf-export');
-      document.head.removeChild(styleElement);
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
