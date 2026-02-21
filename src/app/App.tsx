@@ -10,8 +10,8 @@ import Header from './components/Header';
 import { AlertProvider } from './components/AlertProvider';
 import { ToastContainer } from './components/ui';
 import { Users, MessageSquare, Sparkles, Trophy, Zap, Heart } from 'lucide-react';
-import teacherIllustration from '../assets/7b5d35afc9027a0676c0a18d19a55c27a3464e57.png';
-import studentIllustration from '../assets/aee1f0c2d1d04d3610a56a011cff82fdd91233af.png';
+import teacherIllustration from '../assets/teacher_custom.png';
+import studentIllustration from '../assets/student_custom.png';
 
 interface User {
   id: string;
@@ -249,19 +249,29 @@ export default function App() {
                 </div>
 
                 {/* Character Illustration */}
-                <div className="mb-8 relative">
-                  <div className="w-48 h-48 mx-auto rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-strong group-hover:scale-110 transition-transform duration-500">
-                    <img 
+                <div className="mb-8 relative flex items-center justify-center">
+                  {/* 배경 원 - 이미지와 자연스럽게 블렌딩 */}
+                  <div className="w-52 h-52 mx-auto rounded-full bg-white/15 backdrop-blur-sm shadow-strong group-hover:scale-110 transition-transform duration-500 flex items-end justify-center overflow-hidden relative">
+                    {/* 원 하단 그라디언트로 경계 부드럽게 */}
+                    <div className="absolute inset-0 rounded-full" style={{
+                      background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, rgba(255,140,105,0.15) 70%, rgba(255,140,105,0.35) 100%)'
+                    }} />
+                    <img
                       src={teacherIllustration}
                       alt="Teacher"
-                      className="w-40 h-40 rounded-full object-cover"
+                      className="relative z-10 w-48 h-48 object-contain object-bottom"
+                      style={{
+                        filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.12))',
+                        maskImage: 'radial-gradient(ellipse 90% 95% at 50% 55%, black 60%, transparent 100%)',
+                        WebkitMaskImage: 'radial-gradient(ellipse 90% 95% at 50% 55%, black 60%, transparent 100%)',
+                      }}
                     />
                   </div>
                   {/* Floating mini icons */}
-                  <div className="absolute -top-4 -right-4 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-medium animate-bounce-subtle" style={{ animationDelay: '0s' }}>
+                  <div className="absolute -top-2 right-6 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-medium animate-bounce-subtle" style={{ animationDelay: '0s' }}>
                     📚
                   </div>
-                  <div className="absolute -bottom-2 -left-2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-medium animate-bounce-subtle" style={{ animationDelay: '0.5s' }}>
+                  <div className="absolute -bottom-2 left-6 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-medium animate-bounce-subtle" style={{ animationDelay: '0.5s' }}>
                     ✏️
                   </div>
                 </div>
@@ -313,19 +323,29 @@ export default function App() {
                 </div>
 
                 {/* Character Illustration */}
-                <div className="mb-8 relative">
-                  <div className="w-48 h-48 mx-auto rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-strong group-hover:scale-110 transition-transform duration-500">
-                    <img 
+                <div className="mb-8 relative flex items-center justify-center">
+                  {/* 배경 원 - 이미지와 자연스럽게 블렌딩 */}
+                  <div className="w-52 h-52 mx-auto rounded-full bg-white/15 backdrop-blur-sm shadow-strong group-hover:scale-110 transition-transform duration-500 flex items-end justify-center overflow-hidden relative">
+                    {/* 원 경계 그라디언트 */}
+                    <div className="absolute inset-0 rounded-full" style={{
+                      background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, rgba(125,211,192,0.15) 70%, rgba(125,211,192,0.35) 100%)'
+                    }} />
+                    <img
                       src={studentIllustration}
                       alt="Student"
-                      className="w-40 h-40 rounded-full object-cover"
+                      className="relative z-10 w-48 h-48 object-contain object-bottom"
+                      style={{
+                        filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.12))',
+                        maskImage: 'radial-gradient(ellipse 90% 95% at 50% 55%, black 60%, transparent 100%)',
+                        WebkitMaskImage: 'radial-gradient(ellipse 90% 95% at 50% 55%, black 60%, transparent 100%)',
+                      }}
                     />
                   </div>
                   {/* Floating mini icons */}
-                  <div className="absolute -top-4 -right-4 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-medium animate-bounce-subtle" style={{ animationDelay: '0s' }}>
+                  <div className="absolute -top-2 right-6 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-medium animate-bounce-subtle" style={{ animationDelay: '0s' }}>
                     💬
                   </div>
-                  <div className="absolute -bottom-2 -left-2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-medium animate-bounce-subtle" style={{ animationDelay: '0.5s' }}>
+                  <div className="absolute -bottom-2 left-6 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-medium animate-bounce-subtle" style={{ animationDelay: '0.5s' }}>
                     ⭐
                   </div>
                 </div>
