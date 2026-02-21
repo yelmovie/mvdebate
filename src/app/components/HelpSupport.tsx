@@ -363,44 +363,6 @@ export default function HelpSupport({ onBack, demoMode = false }: HelpSupportPro
                   </div>
                 </div>
 
-                {/* Documentation Links */}
-                <div className="bg-white rounded-3xl p-6 shadow-soft border-2 border-border">
-                  <div className="flex items-center gap-2 mb-6">
-                    <FileText className="w-5 h-5 text-secondary" />
-                    <h3 className="text-lg font-bold text-text-primary">문서 & 자료</h3>
-                  </div>
-                  
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <a href="#" className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors group">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-primary" />
-                        <span className="font-semibold text-text-primary">사용자 매뉴얼</span>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
-                    </a>
-                    <a href="#" className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors group">
-                      <div className="flex items-center gap-3">
-                        <Book className="w-5 h-5 text-secondary" />
-                        <span className="font-semibold text-text-primary">교사 가이드북</span>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-text-secondary group-hover:text-secondary transition-colors" />
-                    </a>
-                    <a href="#" className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors group">
-                      <div className="flex items-center gap-3">
-                        <Video className="w-5 h-5 text-accent" />
-                        <span className="font-semibold text-text-primary">튜토리얼 모음</span>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-text-secondary group-hover:text-accent transition-colors" />
-                    </a>
-                    <a href="#" className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors group">
-                      <div className="flex items-center gap-3">
-                        <Sparkles className="w-5 h-5 text-primary" />
-                        <span className="font-semibold text-text-primary">활용 팁 & 노하우</span>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
-                    </a>
-                  </div>
-                </div>
               </div>
             )}
 
