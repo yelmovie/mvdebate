@@ -116,11 +116,14 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
   async function handleDownloadPDF() {
     setDownloading(true);
     try {
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const W = 210;
-      const MARGIN = 18;
-      const CONTENT_W = W - MARGIN * 2;
-      let y = 0;
+      // ── Canvas 기반 한글 렌더링 (jsPDF 기본 폰트는 한글 미지원) ──
+      const DPI = 3;
+      const PAGE_W_MM = 210;
+      const MARGIN_MM = 18;
+      const CONTENT_W_MM = PAGE_W_MM - MARGIN_MM * 2;
+      const MM_TO_PX = (mm: number) => mm * DPI * (96 / 25.4);
+
+      const canvasW = Math.round(MM_TO_PX(PAGE_W_MM));
 
       const C = {
         primary: '#E8734A',
@@ -136,209 +139,291 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
         white: '#ffffff',
       };
 
-      function splitText(text: string, maxW: number, fontSize: number): string[] {
-        pdf.setFontSize(fontSize);
-        return pdf.splitTextToSize(text, maxW);
+      function hexToRgb(hex: string) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return { r, g, b };
+      }
+      function setFill(ctx: CanvasRenderingContext2D, hex: string, alpha = 1) {
+        const { r, g, b } = hexToRgb(hex);
+        ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+      }
+      function setStroke(ctx: CanvasRenderingContext2D, hex: string) {
+        const { r, g, b } = hexToRgb(hex);
+        ctx.strokeStyle = `rgb(${r},${g},${b})`;
       }
 
-      function checkPageBreak(needed: number) {
-        if (y + needed > 277) { pdf.addPage(); y = MARGIN; }
+      // 텍스트 줄바꿈 측정
+      function measureWrappedLines(
+        text: string,
+        fontPx: number,
+        maxWidthPx: number
+      ): string[] {
+        if (!text) return [''];
+        const tc = document.createElement('canvas');
+        const ctx = tc.getContext('2d')!;
+        ctx.font = `${fontPx}px Arial, sans-serif`;
+        const chars = text.split('');
+        const lines: string[] = [];
+        let cur = '';
+        for (const ch of chars) {
+          const test = cur + ch;
+          if (ctx.measureText(test).width > maxWidthPx && cur.length > 0) {
+            lines.push(cur);
+            cur = ch;
+          } else {
+            cur = test;
+          }
+        }
+        if (cur) lines.push(cur);
+        return lines.length > 0 ? lines : [''];
       }
 
-      function drawSection(title: string, accentColor: string, drawContent: () => number) {
-        const contentH = drawContent();
-        const boxH = 10 + contentH + 6;
-        checkPageBreak(boxH + 6);
-        pdf.setFillColor(accentColor);
-        pdf.rect(MARGIN, y, 3, boxH, 'F');
-        pdf.setFillColor(C.white);
-        pdf.setDrawColor(C.border);
-        pdf.setLineWidth(0.3);
-        pdf.rect(MARGIN + 3, y, CONTENT_W - 3, boxH, 'FD');
-        pdf.setTextColor(accentColor);
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(title, MARGIN + 8, y + 7);
-        const innerY = y + 13;
-        drawContent(innerY);
-        y += boxH + 5;
+      // canvas 블록을 PDF에 이미지로 삽입
+      function drawCanvasBlock(
+        pdf: jsPDF,
+        renderFn: (ctx: CanvasRenderingContext2D, cW: number) => number,
+        yMM: number
+      ): number {
+        const tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = canvasW;
+        tmpCanvas.height = 5000;
+        const ctx = tmpCanvas.getContext('2d')!;
+        const heightPx = renderFn(ctx, canvasW);
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = canvasW;
+        finalCanvas.height = Math.max(1, Math.ceil(heightPx));
+        const fCtx = finalCanvas.getContext('2d')!;
+        fCtx.drawImage(tmpCanvas, 0, 0);
+        const imgData = finalCanvas.toDataURL('image/png');
+        const heightMM = (heightPx / DPI) * (25.4 / 96);
+        pdf.addImage(imgData, 'PNG', 0, yMM, PAGE_W_MM, heightMM);
+        return heightMM;
       }
 
-      // ── 헤더 ──────────────────────────────────────────────
-      pdf.setFillColor(C.primary);
-      pdf.rect(0, 0, W, 38, 'F');
-      pdf.setTextColor(C.white);
-      pdf.setFontSize(20);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('AI Debate', MARGIN, 16);
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('학급 운영 결과 리포트', MARGIN, 23);
+      const MG = Math.round(MM_TO_PX(MARGIN_MM));
+      const CW = Math.round(MM_TO_PX(CONTENT_W_MM));
       const dateStr = new Date().toLocaleDateString('ko-KR');
-      pdf.setFontSize(8);
-      pdf.text(dateStr, W - MARGIN, 23, { align: 'right' });
-      y = 48;
 
-      // ── 통계 카드 4개 ─────────────────────────────────────
-      const stats = [
-        { label: '총 참여 학생', value: `${reportData.totalParticipants}명`, color: C.blue },
-        { label: '총 토론 세션', value: `${reportData.totalSessions}회`, color: C.purple },
-        { label: '평균 토론 길이', value: `${reportData.averageDebateTime}턴`, color: C.green },
-        { label: '찬성 / 반대', value: `${reportData.positionRatio[0]?.value ?? 0}% / ${reportData.positionRatio[1]?.value ?? 0}%`, color: C.pink },
-      ];
-      const cardW = (CONTENT_W - 6) / 4;
-      stats.forEach((st, i) => {
-        const cx = MARGIN + i * (cardW + 2);
-        pdf.setFillColor(C.white);
-        pdf.setDrawColor(C.border);
-        pdf.setLineWidth(0.4);
-        pdf.roundedRect(cx, y, cardW, 24, 2, 2, 'FD');
-        pdf.setFillColor(st.color);
-        pdf.rect(cx, y, cardW, 3, 'F');
-        pdf.setTextColor(C.gray400);
-        pdf.setFontSize(7);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(st.label, cx + cardW / 2, y + 9, { align: 'center' });
-        pdf.setTextColor(st.color);
-        pdf.setFontSize(13);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(st.value, cx + cardW / 2, y + 20, { align: 'center' });
-      });
-      y += 32;
+      // 데이터 안전하게 추출
+      const totalParticipants = reportData.totalParticipants ?? reportData.statistics?.totalStudents ?? 0;
+      const totalSessions = reportData.totalSessions ?? reportData.statistics?.totalDebates ?? 0;
+      const averageDebateTime = reportData.averageDebateTime ?? reportData.statistics?.averageTurns ?? 0;
+      const proVal = reportData.positionRatio?.[0]?.value ?? 50;
+      const conVal = reportData.positionRatio?.[1]?.value ?? 50;
+      const topTopics: any[] = reportData.topTopics || [];
+      const scoreLogic = reportData.averageScores?.logic ?? 0;
+      const scoreEvidence = reportData.averageScores?.evidence ?? 0;
+      const scoreEngagement = reportData.averageScores?.engagement ?? 0;
+      const filterCondition = reportData.summary?.filterCondition || '전체 학급';
+      const mainAchievements = reportData.summary?.mainAchievements || '';
+      const participation = reportData.summary?.participation || '';
 
-      // ── 입장 비율 바 ───────────────────────────────────────
-      checkPageBreak(22);
-      pdf.setTextColor(C.gray900);
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('입장 비율', MARGIN, y + 5);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let yMM = 0;
 
-      const proVal = reportData.positionRatio[0]?.value ?? 50;
-      const conVal = reportData.positionRatio[1]?.value ?? 50;
-      const barY = y + 9;
-      const barH = 6;
-      const proW = (CONTENT_W * proVal) / 100;
-
-      pdf.setFillColor(C.green);
-      pdf.roundedRect(MARGIN, barY, proW, barH, 1, 1, 'F');
-      pdf.setFillColor(C.pink);
-      pdf.roundedRect(MARGIN + proW, barY, CONTENT_W - proW, barH, 1, 1, 'F');
-
-      pdf.setTextColor(C.green);
-      pdf.setFontSize(7);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`찬성 ${proVal}%`, MARGIN, barY + barH + 5);
-      pdf.setTextColor(C.pink);
-      pdf.text(`반대 ${conVal}%`, W - MARGIN, barY + barH + 5, { align: 'right' });
-      y += 30;
-
-      // ── 인기 주제 TOP 3 ────────────────────────────────────
-      if (reportData.topTopics?.length > 0) {
-        checkPageBreak(10 + reportData.topTopics.length * 12 + 6);
-        pdf.setFillColor(C.primary);
-        pdf.rect(MARGIN, y, 3, 10 + reportData.topTopics.length * 12 + 6, 'F');
-        pdf.setFillColor(C.white);
-        pdf.setDrawColor(C.border);
-        pdf.setLineWidth(0.3);
-        pdf.rect(MARGIN + 3, y, CONTENT_W - 3, 10 + reportData.topTopics.length * 12 + 6, 'FD');
-        pdf.setTextColor(C.primary);
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('인기 주제 TOP 3', MARGIN + 8, y + 7);
-        const medals = ['#f59e0b', '#9ca3af', '#ea580c'];
-        reportData.topTopics.slice(0, 3).forEach((topic: any, i: number) => {
-          const rowY = y + 13 + i * 12;
-          pdf.setFillColor(medals[i]);
-          pdf.circle(MARGIN + 13, rowY + 3, 3.5, 'F');
-          pdf.setTextColor(C.white);
-          pdf.setFontSize(7);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(String(i + 1), MARGIN + 13, rowY + 4.5, { align: 'center' });
-          pdf.setTextColor(C.gray900);
-          pdf.setFontSize(9);
-          pdf.setFont('helvetica', 'bold');
-          const titleLines = splitText(topic.title, CONTENT_W - 30, 9);
-          pdf.text(titleLines[0] || '', MARGIN + 20, rowY + 4);
-          pdf.setTextColor(C.gray400);
-          pdf.setFontSize(7.5);
-          pdf.setFont('helvetica', 'normal');
-          pdf.text(`${topic.count}회 토론`, W - MARGIN - 4, rowY + 4, { align: 'right' });
-        });
-        y += 10 + reportData.topTopics.length * 12 + 11;
+      function checkPage(neededMM: number) {
+        if (yMM + neededMM > 285) { pdf.addPage(); yMM = 10; }
       }
 
-      // ── 평균 평가 점수 ─────────────────────────────────────
-      const scoreItems = [
-        { label: '주장 명확성', value: reportData.averageScores?.logic ?? 0, color: C.primary },
-        { label: '근거 사용', value: reportData.averageScores?.evidence ?? 0, color: C.green },
-        { label: '주제 충실도', value: reportData.averageScores?.engagement ?? 0, color: C.blue },
-      ];
-      const scoreBoxH = 10 + scoreItems.length * 12 + 6;
-      checkPageBreak(scoreBoxH + 6);
-      pdf.setFillColor(C.blue);
-      pdf.rect(MARGIN, y, 3, scoreBoxH, 'F');
-      pdf.setFillColor(C.white);
-      pdf.setDrawColor(C.border);
-      pdf.setLineWidth(0.3);
-      pdf.rect(MARGIN + 3, y, CONTENT_W - 3, scoreBoxH, 'FD');
-      pdf.setTextColor(C.blue);
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('평균 평가 점수', MARGIN + 8, y + 7);
-      scoreItems.forEach((si, i) => {
-        const rowY = y + 13 + i * 12;
-        pdf.setTextColor(C.gray600);
-        pdf.setFontSize(8.5);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(si.label, MARGIN + 8, rowY + 4);
-        pdf.setTextColor(si.color);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(`${si.value} / 5`, W - MARGIN - 4, rowY + 4, { align: 'right' });
-        const barW2 = CONTENT_W - 20;
-        pdf.setFillColor(C.border);
-        pdf.roundedRect(MARGIN + 8, rowY + 6, barW2, 3, 1, 1, 'F');
-        pdf.setFillColor(si.color);
-        pdf.roundedRect(MARGIN + 8, rowY + 6, barW2 * (si.value / 5), 3, 1, 1, 'F');
-      });
-      y += scoreBoxH + 5;
+      // ── 1. 헤더 블록 ──────────────────────────────────────
+      const headerH = drawCanvasBlock(pdf, (ctx, cW) => {
+        const headerPx = Math.round(MM_TO_PX(38));
+        setFill(ctx, C.primary);
+        ctx.fillRect(0, 0, cW, headerPx);
+        ctx.fillStyle = C.white;
+        ctx.font = `bold ${Math.round(MM_TO_PX(7))}px Arial, sans-serif`;
+        ctx.fillText('AI Debate', MG, Math.round(MM_TO_PX(14)));
+        ctx.font = `${Math.round(MM_TO_PX(3.5))}px Arial, sans-serif`;
+        ctx.fillText('학급 운영 결과 리포트', MG, Math.round(MM_TO_PX(23)));
+        ctx.textAlign = 'right';
+        ctx.font = `${Math.round(MM_TO_PX(3))}px Arial, sans-serif`;
+        ctx.fillText(dateStr, cW - MG, Math.round(MM_TO_PX(23)));
+        ctx.textAlign = 'left';
+        return headerPx + Math.round(MM_TO_PX(10));
+      }, yMM);
+      yMM += headerH;
 
-      // ── 운영 요약 ──────────────────────────────────────────
-      const summaryItems = [
-        { label: '필터 조건', text: reportData.summary?.filterCondition || '' },
-        { label: '주요 성과', text: reportData.summary?.mainAchievements || '' },
-        { label: '참여도 분석', text: reportData.summary?.participation || '' },
-      ];
-      summaryItems.forEach(({ label, text }) => {
-        if (!text) return;
-        const lines = splitText(text, CONTENT_W - 10, 9);
-        const boxH = 10 + lines.length * 5 + 6;
-        checkPageBreak(boxH + 6);
-        pdf.setFillColor(C.purple);
-        pdf.rect(MARGIN, y, 3, boxH, 'F');
-        pdf.setFillColor(C.white);
-        pdf.setDrawColor(C.border);
-        pdf.setLineWidth(0.3);
-        pdf.rect(MARGIN + 3, y, CONTENT_W - 3, boxH, 'FD');
-        pdf.setTextColor(C.purple);
-        pdf.setFontSize(8.5);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(label, MARGIN + 8, y + 7);
-        pdf.setTextColor(C.gray600);
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'normal');
-        lines.forEach((line, li) => pdf.text(line, MARGIN + 8, y + 13 + li * 5));
-        y += boxH + 5;
-      });
+      // ── 2. 통계 카드 4개 ──────────────────────────────────
+      const statsH = drawCanvasBlock(pdf, (ctx, cW) => {
+        const stats = [
+          { label: '총 참여 학생', value: `${totalParticipants}명`, color: C.blue },
+          { label: '총 토론 세션', value: `${totalSessions}회`, color: C.purple },
+          { label: '평균 토론 길이', value: `${averageDebateTime}턴`, color: C.green },
+          { label: '찬성 / 반대', value: `${proVal}% / ${conVal}%`, color: C.pink },
+        ];
+        const cardW = Math.round((CW - Math.round(MM_TO_PX(2)) * 3) / 4);
+        const cardH = Math.round(MM_TO_PX(24));
+        const gap = Math.round(MM_TO_PX(2));
+        stats.forEach((st, i) => {
+          const cx = MG + i * (cardW + gap);
+          setFill(ctx, C.white);
+          ctx.fillRect(cx, 0, cardW, cardH);
+          setStroke(ctx, C.border);
+          ctx.lineWidth = 1;
+          ctx.strokeRect(cx, 0, cardW, cardH);
+          setFill(ctx, st.color);
+          ctx.fillRect(cx, 0, cardW, Math.round(MM_TO_PX(2)));
+          // 라벨
+          ctx.fillStyle = C.gray400;
+          ctx.font = `${Math.round(MM_TO_PX(2.8))}px Arial, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(st.label, cx + cardW / 2, Math.round(MM_TO_PX(9)));
+          // 값
+          ctx.fillStyle = st.color;
+          ctx.font = `bold ${Math.round(MM_TO_PX(5))}px Arial, sans-serif`;
+          ctx.fillText(st.value, cx + cardW / 2, Math.round(MM_TO_PX(19)));
+          ctx.textAlign = 'left';
+        });
+        return cardH + Math.round(MM_TO_PX(4));
+      }, yMM);
+      yMM += statsH;
 
-      // ── 푸터 ───────────────────────────────────────────────
-      checkPageBreak(14);
-      pdf.setDrawColor(C.border);
-      pdf.setLineWidth(0.3);
-      pdf.line(MARGIN, y + 4, W - MARGIN, y + 4);
-      pdf.setTextColor(C.gray400);
-      pdf.setFontSize(7.5);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('AI Debate — 토론으로 더 나은 생각을', W / 2, y + 10, { align: 'center' });
+      // ── 3. 입장 비율 섹션 ─────────────────────────────────
+      checkPage(28);
+      const posH = drawCanvasBlock(pdf, (ctx, cW) => {
+        let cy = Math.round(MM_TO_PX(4));
+        ctx.fillStyle = C.gray900;
+        ctx.font = `bold ${Math.round(MM_TO_PX(3.5))}px Arial, sans-serif`;
+        ctx.fillText('입장 비율', MG, cy + Math.round(MM_TO_PX(4)));
+        cy += Math.round(MM_TO_PX(8));
+        const barH = Math.round(MM_TO_PX(6));
+        const proW = Math.round(CW * proVal / 100);
+        // 찬성 바
+        setFill(ctx, C.green);
+        ctx.beginPath();
+        ctx.roundRect(MG, cy, proW, barH, 4);
+        ctx.fill();
+        // 반대 바
+        setFill(ctx, C.pink);
+        ctx.beginPath();
+        ctx.roundRect(MG + proW, cy, CW - proW, barH, 4);
+        ctx.fill();
+        cy += barH + Math.round(MM_TO_PX(4));
+        // 라벨
+        ctx.fillStyle = C.green;
+        ctx.font = `${Math.round(MM_TO_PX(2.8))}px Arial, sans-serif`;
+        ctx.fillText(`찬성 ${proVal}%`, MG, cy);
+        ctx.fillStyle = C.pink;
+        ctx.textAlign = 'right';
+        ctx.fillText(`반대 ${conVal}%`, MG + CW, cy);
+        ctx.textAlign = 'left';
+        cy += Math.round(MM_TO_PX(4));
+        return cy;
+      }, yMM);
+      yMM += posH;
+
+      // ── 한글 섹션 공통 렌더 함수 ──────────────────────────
+      function drawKoreanSection(
+        title: string,
+        lines: string[],
+        accentColor: string,
+        rows?: Array<{ label: string; value: string; color: string; barRatio?: number }>
+      ) {
+        const titleFontPx = Math.round(MM_TO_PX(3.5));
+        const fontPx = Math.round(MM_TO_PX(3.3));
+        const lineH = Math.round(fontPx * 1.7);
+        const innerH = Math.round(MM_TO_PX(8))
+          + (lines.length > 0 ? lines.length * lineH : 0)
+          + (rows ? rows.length * Math.round(MM_TO_PX(9)) : 0)
+          + Math.round(MM_TO_PX(4));
+        const sectionMM = (innerH / DPI) * (25.4 / 96) + 6;
+        checkPage(sectionMM);
+
+        const h = drawCanvasBlock(pdf, (ctx) => {
+          const accentW = Math.round(MM_TO_PX(2));
+          setFill(ctx, accentColor);
+          ctx.fillRect(MG, 0, accentW, innerH);
+          setFill(ctx, C.white);
+          ctx.fillRect(MG + accentW, 0, CW - accentW, innerH);
+          setStroke(ctx, C.border);
+          ctx.lineWidth = 0.8;
+          ctx.strokeRect(MG + accentW, 0, CW - accentW, innerH);
+          // 제목
+          ctx.fillStyle = accentColor;
+          ctx.font = `bold ${titleFontPx}px Arial, sans-serif`;
+          ctx.fillText(title, MG + Math.round(MM_TO_PX(4)), Math.round(MM_TO_PX(7)));
+          // 텍스트 줄
+          ctx.fillStyle = C.gray600;
+          ctx.font = `${fontPx}px Arial, sans-serif`;
+          lines.forEach((line, i) => {
+            ctx.fillText(line, MG + Math.round(MM_TO_PX(4)), Math.round(MM_TO_PX(12)) + i * lineH);
+          });
+          // 점수 바 행
+          if (rows) {
+            rows.forEach((row, i) => {
+              const rowY = Math.round(MM_TO_PX(12)) + lines.length * lineH + i * Math.round(MM_TO_PX(9));
+              ctx.fillStyle = C.gray600;
+              ctx.font = `${Math.round(MM_TO_PX(3.2))}px Arial, sans-serif`;
+              ctx.fillText(row.label, MG + Math.round(MM_TO_PX(4)), rowY);
+              ctx.fillStyle = row.color;
+              ctx.textAlign = 'right';
+              ctx.fillText(row.value, MG + CW - Math.round(MM_TO_PX(2)), rowY);
+              ctx.textAlign = 'left';
+              const bY = rowY + Math.round(MM_TO_PX(2));
+              const bW = CW - Math.round(MM_TO_PX(12));
+              setFill(ctx, C.border);
+              ctx.beginPath(); ctx.roundRect(MG + Math.round(MM_TO_PX(4)), bY, bW, Math.round(MM_TO_PX(2.5)), 2); ctx.fill();
+              setFill(ctx, row.color);
+              ctx.beginPath(); ctx.roundRect(MG + Math.round(MM_TO_PX(4)), bY, Math.round(bW * (row.barRatio ?? 0)), Math.round(MM_TO_PX(2.5)), 2); ctx.fill();
+            });
+          }
+          return innerH;
+        }, yMM);
+        yMM += h + 4;
+      }
+
+      // ── 4. 인기 주제 TOP 3 ────────────────────────────────
+      if (topTopics.length > 0) {
+        const topicLines: string[] = [];
+        topTopics.slice(0, 3).forEach((topic: any, i: number) => {
+          const medal = ['🥇', '🥈', '🥉'][i];
+          const titleText = topic.title || '주제 없음';
+          const countText = `${topic.count ?? 0}회`;
+          const wrapped = measureWrappedLines(`${medal} ${titleText}  (${countText})`, Math.round(MM_TO_PX(3.3)), CW - Math.round(MM_TO_PX(12)));
+          wrapped.forEach(l => topicLines.push(l));
+        });
+        drawKoreanSection('인기 주제 TOP 3', topicLines, C.primary);
+      }
+
+      // ── 5. 평균 평가 점수 ─────────────────────────────────
+      drawKoreanSection('평균 평가 점수', [], C.blue, [
+        { label: '주장 명확성', value: `${scoreLogic} / 5`, color: C.primary, barRatio: scoreLogic / 5 },
+        { label: '근거 사용', value: `${scoreEvidence} / 5`, color: C.green, barRatio: scoreEvidence / 5 },
+        { label: '주제 충실도', value: `${scoreEngagement} / 5`, color: C.blue, barRatio: scoreEngagement / 5 },
+      ]);
+
+      // ── 6. 운영 요약 ──────────────────────────────────────
+      if (filterCondition) {
+        const lines = measureWrappedLines(filterCondition, Math.round(MM_TO_PX(3.3)), CW - Math.round(MM_TO_PX(12)));
+        drawKoreanSection('필터 조건', lines, C.purple);
+      }
+      if (mainAchievements) {
+        const lines = measureWrappedLines(mainAchievements, Math.round(MM_TO_PX(3.3)), CW - Math.round(MM_TO_PX(12)));
+        drawKoreanSection('주요 성과', lines, C.green);
+      }
+      if (participation) {
+        const lines = measureWrappedLines(participation, Math.round(MM_TO_PX(3.3)), CW - Math.round(MM_TO_PX(12)));
+        drawKoreanSection('참여도 분석', lines, C.blue);
+      }
+
+      // ── 7. 푸터 ───────────────────────────────────────────
+      checkPage(14);
+      drawCanvasBlock(pdf, (ctx, cW) => {
+        setStroke(ctx, C.border);
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(MG, Math.round(MM_TO_PX(4)));
+        ctx.lineTo(cW - MG, Math.round(MM_TO_PX(4)));
+        ctx.stroke();
+        ctx.fillStyle = C.gray400;
+        ctx.font = `${Math.round(MM_TO_PX(2.8))}px Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('AI Debate — 토론으로 더 나은 생각을', cW / 2, Math.round(MM_TO_PX(10)));
+        ctx.textAlign = 'left';
+        return Math.round(MM_TO_PX(14));
+      }, yMM);
 
       pdf.save(`AI와토론해요_운영결과_${dateStr}.pdf`);
       setShowSuccess(true);
