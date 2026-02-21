@@ -194,14 +194,19 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
       
       const data = await apiCall(`/classes/${classId}/topics/generate`, {
         method: 'POST',
-        body: JSON.stringify({ prompt: aiPrompt }),
+        body: JSON.stringify({ prompt: aiPrompt || '초등학생에게 적합한 흥미로운 토론 주제를 만들어주세요.' }),
       });
+
+      if (!data?.topic) {
+        throw new Error('주제 생성에 실패했습니다. 다시 시도해주세요.');
+      }
 
       setTopics([data.topic, ...topics]);
       setShowAIModal(false);
       setAiPrompt('');
+      showAlert('AI가 새 토론 주제를 생성했습니다! 🎉');
     } catch (error: any) {
-      showAlert(error.message);
+      showAlert(error.message || '주제 생성 중 오류가 발생했습니다.');
     } finally {
       setIsGenerating(false);
     }

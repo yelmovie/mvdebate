@@ -563,6 +563,104 @@ app.get("/make-server-7273e82a/classes/:classId/topics", async (c) => {
   }
 });
 
+// AI topic generation for a class: POST /classes/:classId/topics/generate
+app.post("/make-server-7273e82a/classes/:classId/topics/generate", async (c) => {
+  try {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user || user.role !== 'teacher') {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const classId = c.req.param('classId');
+    const classData = await kv.get(`class:${classId}`);
+    if (!classData || classData.teacherId !== user.id) {
+      return c.json({ error: 'Class not found or unauthorized' }, 403);
+    }
+
+    const body = await c.req.json().catch(() => ({}));
+    const prompt: string = body.prompt || '초등학생을 위한 흥미로운 토론 주제를 생성해주세요.';
+
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
+
+    let topicTitle = '';
+    let topicDescription = '';
+
+    if (apiKey) {
+      // OpenAI로 주제 생성
+      const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: '당신은 초등학교 교육 전문가입니다. 학생들이 토론하기 좋은 주제를 생성해주세요. 반드시 다음 JSON 형식으로만 응답하세요: {"title": "주제 제목", "description": "주제 설명 (1-2문장)"}'
+            },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.8,
+          max_tokens: 300
+        }),
+      });
+
+      if (aiRes.ok) {
+        const aiData = await aiRes.json();
+        const content = aiData.choices?.[0]?.message?.content || '';
+        try {
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            topicTitle = parsed.title || '';
+            topicDescription = parsed.description || '';
+          }
+        } catch (_) { /* JSON 파싱 실패 시 fallback */ }
+      }
+    }
+
+    // AI 응답이 없거나 실패 시 기본 주제 생성
+    if (!topicTitle) {
+      const fallbackTopics = [
+        { title: '학교에서 스마트폰 사용을 허용해야 한다', description: '학교 수업 중 스마트폰 사용 허용 여부에 대해 찬반 입장에서 토론해 보세요.' },
+        { title: '게임은 교육적으로 유익하다', description: '교육용 게임과 일반 게임의 교육적 효과에 대해 토론해 보세요.' },
+        { title: '환경 보호를 위해 채식을 권장해야 한다', description: '환경 보호 관점에서 채식 식단 권장 정책에 대해 토론해 보세요.' },
+        { title: '인공지능이 선생님을 대체할 수 있다', description: 'AI 기술 발전과 교육 현장에서의 활용 가능성에 대해 토론해 보세요.' },
+        { title: '초등학생에게도 선거권을 주어야 한다', description: '아동의 정치 참여 권리와 민주주의에 대해 토론해 보세요.' },
+      ];
+      const pick = fallbackTopics[Math.floor(Math.random() * fallbackTopics.length)];
+      topicTitle = pick.title;
+      topicDescription = pick.description;
+    }
+
+    // 생성된 주제를 클래스 DB에 저장
+    const topicId = crypto.randomUUID();
+    const topicData = {
+      id: topicId,
+      classId,
+      title: topicTitle,
+      description: topicDescription,
+      isAIGenerated: true,
+      tags: ['AI생성'],
+      createdAt: new Date().toISOString(),
+    };
+
+    await kv.set(`topic:${topicId}`, topicData);
+    const classTopics: string[] = await kv.get(`class:${classId}:topics`) || [];
+    if (!classTopics.includes(topicId)) {
+      classTopics.unshift(topicId); // 최신순으로 맨 앞에
+      await kv.set(`class:${classId}:topics`, classTopics);
+    }
+
+    return c.json({ topic: topicData });
+  } catch (error) {
+    console.log('Generate class topic error:', error);
+    return c.json({ error: 'Failed to generate topic' }, 500);
+  }
+});
+
 // Get random topic
 app.get("/make-server-7273e82a/topics/random", async (c) => {
   try {
