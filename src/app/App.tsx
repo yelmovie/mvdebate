@@ -250,21 +250,14 @@ export default function App() {
 
                 {/* Character Illustration */}
                 <div className="mb-8 relative flex items-center justify-center">
-                  {/* 배경 원 - 이미지와 자연스럽게 블렌딩 */}
-                  <div className="w-52 h-52 mx-auto rounded-full bg-white/15 backdrop-blur-sm shadow-strong group-hover:scale-110 transition-transform duration-500 flex items-end justify-center overflow-hidden relative">
-                    {/* 원 하단 그라디언트로 경계 부드럽게 */}
-                    <div className="absolute inset-0 rounded-full" style={{
-                      background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, rgba(255,140,105,0.15) 70%, rgba(255,140,105,0.35) 100%)'
-                    }} />
+                  <div
+                    className="w-56 h-56 mx-auto rounded-full shadow-strong group-hover:scale-110 transition-transform duration-500 flex items-center justify-center overflow-hidden"
+                    style={{ background: 'rgba(255,255,255,0.9)' }}
+                  >
                     <img
                       src={teacherIllustration}
                       alt="Teacher"
-                      className="relative z-10 w-48 h-48 object-contain object-bottom"
-                      style={{
-                        filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.12))',
-                        maskImage: 'radial-gradient(ellipse 90% 95% at 50% 55%, black 60%, transparent 100%)',
-                        WebkitMaskImage: 'radial-gradient(ellipse 90% 95% at 50% 55%, black 60%, transparent 100%)',
-                      }}
+                      className="w-[90%] h-[90%] object-contain"
                     />
                   </div>
                   {/* Floating mini icons */}
@@ -324,21 +317,14 @@ export default function App() {
 
                 {/* Character Illustration */}
                 <div className="mb-8 relative flex items-center justify-center">
-                  {/* 배경 원 - 이미지와 자연스럽게 블렌딩 */}
-                  <div className="w-52 h-52 mx-auto rounded-full bg-white/15 backdrop-blur-sm shadow-strong group-hover:scale-110 transition-transform duration-500 flex items-end justify-center overflow-hidden relative">
-                    {/* 원 경계 그라디언트 */}
-                    <div className="absolute inset-0 rounded-full" style={{
-                      background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, rgba(125,211,192,0.15) 70%, rgba(125,211,192,0.35) 100%)'
-                    }} />
+                  <div
+                    className="w-56 h-56 mx-auto rounded-full shadow-strong group-hover:scale-110 transition-transform duration-500 flex items-center justify-center overflow-hidden"
+                    style={{ background: 'rgba(255,255,255,0.9)' }}
+                  >
                     <img
                       src={studentIllustration}
                       alt="Student"
-                      className="relative z-10 w-48 h-48 object-contain object-bottom"
-                      style={{
-                        filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.12))',
-                        maskImage: 'radial-gradient(ellipse 90% 95% at 50% 55%, black 60%, transparent 100%)',
-                        WebkitMaskImage: 'radial-gradient(ellipse 90% 95% at 50% 55%, black 60%, transparent 100%)',
-                      }}
+                      className="w-[90%] h-[90%] object-contain"
                     />
                   </div>
                   {/* Floating mini icons */}
