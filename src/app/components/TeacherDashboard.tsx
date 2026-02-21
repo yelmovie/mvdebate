@@ -426,6 +426,9 @@ export default function TeacherDashboard({ user, onLogout, demoMode = false, the
       <DataDashboard
         onBack={() => setViewMode('dashboard')}
         demoMode={demoMode}
+        classes={classes}
+        allStudents={students}
+        initialClassId={selectedClass?.id}
       />
     );
   }
