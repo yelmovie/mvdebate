@@ -10,8 +10,8 @@ import Header from './components/Header';
 import { AlertProvider } from './components/AlertProvider';
 import { ToastContainer } from './components/ui';
 import { Users, MessageSquare, Sparkles, Trophy, Zap, Heart } from 'lucide-react';
-import teacherIllustration from '../assets/teacher_illust_v2.png';
-import studentIllustration from '../assets/student_illust_v2.png';
+import teacherIllustration from '../assets/teacher_new.png';
+import studentIllustration from '../assets/student_new.png';
 
 interface User {
   id: string;
