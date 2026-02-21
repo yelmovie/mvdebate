@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiCall } from '../../utils/supabase';
 import { 
   LogOut, MessageSquare, Trophy, Gift, Sparkles, BookOpen,
   TrendingUp, Award, ChevronRight, Plus, Shuffle, X, Users, User,
-  Flame, Target, Zap, Star, CheckCircle2
+  Flame, Target, Zap, Star, CheckCircle2, Bell, BellRing, Pin, ChevronDown, ChevronUp
 } from 'lucide-react';
 import DebateSetup from './DebateSetup';
 import DebatePreparation from './DebatePreparation';
@@ -57,6 +57,18 @@ interface Coupon {
   usedAt?: string;
 }
 
+interface Announcement {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  classId: string | null;
+  title: string;
+  content: string;
+  isPinned: boolean;
+  createdAt: string;
+  isRead?: boolean;
+}
+
 type ViewMode = 'dashboard' | 'setup' | 'preparation' | 'chat' | 'reflection' | 'result';
 type TabMode = 'random' | 'teacher';
 
@@ -70,7 +82,14 @@ export default function StudentDashboard({ user, onLogout, demoMode = false, the
   const [currentDebateId, setCurrentDebateId] = useState<string | null>(null);
   const [currentDebate, setCurrentDebate] = useState<any>(null);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
-  const [streak, setStreak] = useState(3); // 연속 참여 일수
+  const [streak, setStreak] = useState(3);
+
+  // 공지사항 관련 상태
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [showAnnouncementPopup, setShowAnnouncementPopup] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [showAnnouncementList, setShowAnnouncementList] = useState(false);
+  const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -79,7 +98,6 @@ export default function StudentDashboard({ user, onLogout, demoMode = false, the
   async function loadData() {
     try {
       if (demoMode) {
-        // Mock data for demo mode
         setClasses([
           { id: 'class-1', name: '3학년 1반', classCode: 'ABC12' }
         ]);
@@ -101,6 +119,39 @@ export default function StudentDashboard({ user, onLogout, demoMode = false, the
           { id: 'coupon-3', couponType: 'hint-card', createdAt: '2024-02-08', used: false },
           { id: 'coupon-4', couponType: 'penalty-pass', createdAt: '2024-02-15', used: false }
         ]);
+        // 데모 공지사항
+        const demoAnnouncements: Announcement[] = [
+          {
+            id: 'ann-1',
+            teacherId: 'teacher-1',
+            teacherName: '김선생님',
+            classId: 'class-1',
+            title: '📢 이번 주 토론 주제 안내',
+            content: '이번 주 토론 주제는 "AI 사용 허용"입니다. 미리 준비해 오세요!\n\n준비물: 본인의 의견 3가지 이상',
+            isPinned: true,
+            createdAt: new Date(Date.now() - 3600000).toISOString(),
+            isRead: false
+          },
+          {
+            id: 'ann-2',
+            teacherId: 'teacher-1',
+            teacherName: '김선생님',
+            classId: null,
+            title: '✅ 토론 평가 기준 변경 안내',
+            content: '다음 달부터 토론 평가 기준이 변경됩니다.\n\n1. 논리성 (40점)\n2. 근거 제시 (30점)\n3. 반박 능력 (30점)',
+            isPinned: false,
+            createdAt: new Date(Date.now() - 86400000).toISOString(),
+            isRead: false
+          }
+        ];
+        setAnnouncements(demoAnnouncements);
+        setAnnouncementsLoaded(true);
+        // 읽지 않은 공지가 있으면 팝업 표시
+        const unread = demoAnnouncements.filter(a => !a.isRead);
+        if (unread.length > 0) {
+          setSelectedAnnouncement(unread[0]);
+          setShowAnnouncementPopup(true);
+        }
         return;
       }
       
@@ -114,11 +165,13 @@ export default function StudentDashboard({ user, onLogout, demoMode = false, the
       setDebates(debatesData.debates);
       setCoupons(couponsData.coupons);
 
-      // Load topics from first class
       if (classesData.classes.length > 0) {
         const topicsData = await apiCall(`/classes/${classesData.classes[0].id}/topics`);
         setTopics(topicsData.topics);
       }
+
+      // 공지사항 로드
+      await loadAnnouncements();
     } catch (error: any) {
       console.error('Error loading data:', error);
       if (error.message?.includes('인증')) {
@@ -126,6 +179,52 @@ export default function StudentDashboard({ user, onLogout, demoMode = false, the
         onLogout();
       }
     }
+  }
+
+  async function loadAnnouncements() {
+    try {
+      const data = await apiCall('/student/announcements');
+      const anns: Announcement[] = data.announcements || [];
+      setAnnouncements(anns);
+      setAnnouncementsLoaded(true);
+
+      // 읽지 않은 공지 중 최신 1개를 팝업으로 표시
+      const unread = anns.filter(a => !a.isRead);
+      if (unread.length > 0) {
+        setSelectedAnnouncement(unread[0]);
+        setShowAnnouncementPopup(true);
+      }
+    } catch (error) {
+      console.error('Failed to load announcements:', error);
+      setAnnouncementsLoaded(true);
+    }
+  }
+
+  async function handleMarkAsRead(announcementId: string) {
+    try {
+      setAnnouncements(prev =>
+        prev.map(a => a.id === announcementId ? { ...a, isRead: true } : a)
+      );
+      if (!demoMode) {
+        await apiCall(`/student/announcements/${announcementId}/read`, { method: 'POST' });
+      }
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
+  }
+
+  function handleClosePopup() {
+    if (selectedAnnouncement) {
+      handleMarkAsRead(selectedAnnouncement.id);
+    }
+    setShowAnnouncementPopup(false);
+    setSelectedAnnouncement(null);
+  }
+
+  function handleOpenAnnouncement(ann: Announcement) {
+    setSelectedAnnouncement(ann);
+    setShowAnnouncementPopup(true);
+    setShowAnnouncementList(false);
   }
 
   const randomTopics: Topic[] = [
@@ -328,11 +427,140 @@ export default function StudentDashboard({ user, onLogout, demoMode = false, the
     );
   }
 
+  const unreadCount = announcements.filter(a => !a.isRead).length;
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background blobs */}
       <div className="blob-bg absolute top-20 right-10 w-96 h-96 bg-secondary"></div>
       <div className="blob-bg absolute bottom-20 left-10 w-80 h-80 bg-accent"></div>
+
+      {/* ===== 공지사항 팝업 ===== */}
+      {showAnnouncementPopup && selectedAnnouncement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
+            {/* 팝업 헤더 */}
+            <div className="bg-gradient-to-r from-primary to-primary/80 px-6 py-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
+                  {selectedAnnouncement.isPinned
+                    ? <Pin className="w-5 h-5 text-white" />
+                    : <BellRing className="w-5 h-5 text-white" />
+                  }
+                </div>
+                <div>
+                  <p className="text-white/70 text-xs font-medium">
+                    {selectedAnnouncement.isPinned ? '📌 중요 공지' : '📢 선생님 공지사항'}
+                  </p>
+                  <p className="text-white text-sm font-semibold">
+                    {selectedAnnouncement.teacherName}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleClosePopup}
+                className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+
+            {/* 팝업 본문 */}
+            <div className="px-6 py-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-3">{selectedAnnouncement.title}</h3>
+              <div className="bg-gray-50 rounded-2xl p-4 mb-4">
+                <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{selectedAnnouncement.content}</p>
+              </div>
+              <p className="text-xs text-gray-400 text-right">
+                {new Date(selectedAnnouncement.createdAt).toLocaleDateString('ko-KR', {
+                  year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                })}
+              </p>
+            </div>
+
+            {/* 팝업 하단 */}
+            <div className="px-6 pb-6 flex gap-3">
+              {unreadCount > 1 && (
+                <button
+                  onClick={() => {
+                    handleClosePopup();
+                    setShowAnnouncementList(true);
+                  }}
+                  className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-50 transition-colors text-sm font-semibold"
+                >
+                  다른 공지 보기 ({unreadCount - 1}개)
+                </button>
+              )}
+              <button
+                onClick={handleClosePopup}
+                className="flex-1 py-3 bg-gradient-primary text-white rounded-2xl hover:opacity-90 transition-opacity text-sm font-bold shadow-medium"
+              >
+                확인했어요 ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== 공지사항 목록 사이드 패널 ===== */}
+      {showAnnouncementList && (
+        <div className="fixed inset-0 z-50 flex items-start justify-end p-4 bg-black/30 backdrop-blur-sm" onClick={() => setShowAnnouncementList(false)}>
+          <div
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm mt-20 mr-2 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-white" />
+                <h3 className="text-white font-bold">선생님 공지사항</h3>
+                {unreadCount > 0 && (
+                  <span className="bg-white/30 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    읽지 않음 {unreadCount}
+                  </span>
+                )}
+              </div>
+              <button onClick={() => setShowAnnouncementList(false)}>
+                <X className="w-5 h-5 text-white/70 hover:text-white" />
+              </button>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto">
+              {announcements.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Bell className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                  <p className="text-gray-400 text-sm">공지사항이 없어요</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {announcements.map(ann => (
+                    <button
+                      key={ann.id}
+                      onClick={() => handleOpenAnnouncement(ann)}
+                      className={`w-full text-left px-5 py-4 hover:bg-gray-50 transition-colors ${!ann.isRead ? 'bg-primary/3' : ''}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!ann.isRead ? 'bg-primary' : 'bg-gray-200'}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            {ann.isPinned && <Pin className="w-3 h-3 text-primary flex-shrink-0" />}
+                            <p className={`text-sm font-semibold truncate ${!ann.isRead ? 'text-gray-900' : 'text-gray-500'}`}>
+                              {ann.title}
+                            </p>
+                          </div>
+                          <p className="text-xs text-gray-400 line-clamp-1">{ann.content}</p>
+                          <p className="text-xs text-gray-300 mt-1">
+                            {ann.teacherName} · {new Date(ann.createdAt).toLocaleDateString('ko-KR')}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="relative z-10">
         {/* 상단: 학생 프로필 + 오늘의 미션 */}
@@ -350,8 +578,20 @@ export default function StudentDashboard({ user, onLogout, demoMode = false, the
                 </div>
               </div>
 
-              {/* 통계 */}
+              {/* 통계 + 공지사항 알림 버튼 */}
               <div className="flex items-center gap-3">
+                {/* 공지사항 알림 버튼 */}
+                <button
+                  onClick={() => setShowAnnouncementList(true)}
+                  className="relative w-12 h-12 bg-white rounded-2xl shadow-soft border border-border flex items-center justify-center hover:shadow-medium transition-shadow"
+                >
+                  <Bell className="w-5 h-5 text-text-secondary" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
                 {/* 연속 참여 스트릭 */}
                 <div className="flex items-center gap-2 px-5 py-3 bg-gradient-accent rounded-full shadow-soft">
                   <Flame className="w-5 h-5 text-white" />
@@ -398,7 +638,55 @@ export default function StudentDashboard({ user, onLogout, demoMode = false, the
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
             {/* 좌측: 진행 중인 토론 (Sticky Sidebar) */}
             <div className="lg:col-span-1">
-              <div className="lg:sticky lg:top-8 bg-white/80 backdrop-blur-sm rounded-3xl p-4 sm:p-6 shadow-soft border border-border">\n                <div className="flex items-center gap-2 mb-4">
+              {/* 공지사항 배너 (사이드바 최상단) */}
+              {announcements.length > 0 && (
+                <div className="mb-4 bg-white/80 backdrop-blur-sm rounded-3xl shadow-soft border border-primary/20 overflow-hidden">
+                  <button
+                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-primary/5 transition-colors"
+                    onClick={() => setShowAnnouncementList(!showAnnouncementList)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Bell className="w-4 h-4 text-primary" />
+                        {unreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
+                        )}
+                      </div>
+                      <span className="text-sm font-bold text-primary">선생님 공지사항</span>
+                      {unreadCount > 0 && (
+                        <span className="text-xs bg-primary text-white px-1.5 py-0.5 rounded-full font-bold">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    {showAnnouncementList
+                      ? <ChevronUp className="w-4 h-4 text-primary" />
+                      : <ChevronDown className="w-4 h-4 text-primary" />
+                    }
+                  </button>
+
+                  {/* 최신 공지 미리보기 */}
+                  {!showAnnouncementList && (
+                    <button
+                      onClick={() => handleOpenAnnouncement(announcements[0])}
+                      className="w-full px-4 pb-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-start gap-2">
+                        {announcements[0].isPinned && <Pin className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />}
+                        <div>
+                          <p className={`text-xs font-semibold truncate ${!announcements[0].isRead ? 'text-gray-900' : 'text-gray-500'}`}>
+                            {announcements[0].title}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5 truncate">{announcements[0].content}</p>
+                        </div>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div className="lg:sticky lg:top-8 bg-white/80 backdrop-blur-sm rounded-3xl p-4 sm:p-6 shadow-soft border border-border">
+                <div className="flex items-center gap-2 mb-4">
                   <MessageSquare className="w-5 h-5 text-primary" />
                   <h3 className="font-bold text-text-primary">진행 중인 토론</h3>
                 </div>

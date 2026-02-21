@@ -2947,4 +2947,207 @@ app.post('/make-server-7273e82a/support/contact', async (c) => {
   }
 });
 
+// ===== 공지사항 엔드포인트 =====
+
+// 교사: 공지사항 작성
+app.post('/announcements', async (c) => {
+  try {
+    const session = await getSession(c);
+    if (!session || session.role !== 'teacher') {
+      return c.json({ error: 'Teacher auth required' }, 401);
+    }
+
+    const body = await c.req.json();
+    const { classId, title, content, isPinned } = body;
+
+    if (!title || !content) {
+      return c.json({ error: 'Title and content are required' }, 400);
+    }
+
+    const announcementId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    const announcement = {
+      id: announcementId,
+      teacherId: session.userId,
+      teacherName: session.name || '선생님',
+      classId: classId || null,
+      title,
+      content,
+      isPinned: isPinned || false,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    await kv.set(`announcement:${announcementId}`, announcement);
+
+    // 교사의 공지사항 목록 인덱스 업데이트
+    const teacherAnnouncements = await kv.get(`teacher_announcements:${session.userId}`) || [];
+    teacherAnnouncements.unshift(announcementId);
+    await kv.set(`teacher_announcements:${session.userId}`, teacherAnnouncements);
+
+    // 특정 학급 공지사항 인덱스 업데이트
+    if (classId) {
+      const classAnnouncements = await kv.get(`class_announcements:${classId}`) || [];
+      classAnnouncements.unshift(announcementId);
+      await kv.set(`class_announcements:${classId}`, classAnnouncements);
+    } else {
+      // 전체 공지 인덱스
+      const globalAnnouncements = await kv.get('global_announcements') || [];
+      globalAnnouncements.unshift(announcementId);
+      await kv.set('global_announcements', globalAnnouncements);
+    }
+
+    return c.json({ success: true, announcement });
+  } catch (error) {
+    console.log('Announcement create error:', error);
+    return c.json({ error: 'Failed to create announcement', details: error.message }, 500);
+  }
+});
+
+// 교사: 자신의 공지사항 목록 조회
+app.get('/teacher/announcements', async (c) => {
+  try {
+    const session = await getSession(c);
+    if (!session || session.role !== 'teacher') {
+      return c.json({ error: 'Teacher auth required' }, 401);
+    }
+
+    const announcementIds = await kv.get(`teacher_announcements:${session.userId}`) || [];
+    const announcements = [];
+
+    for (const id of announcementIds) {
+      const ann = await kv.get(`announcement:${id}`);
+      if (ann) announcements.push(ann);
+    }
+
+    return c.json({ announcements });
+  } catch (error) {
+    console.log('Teacher announcements error:', error);
+    return c.json({ error: 'Failed to fetch announcements', details: error.message }, 500);
+  }
+});
+
+// 교사: 공지사항 삭제
+app.delete('/announcements/:id', async (c) => {
+  try {
+    const session = await getSession(c);
+    if (!session || session.role !== 'teacher') {
+      return c.json({ error: 'Teacher auth required' }, 401);
+    }
+
+    const announcementId = c.req.param('id');
+    const ann = await kv.get(`announcement:${announcementId}`);
+
+    if (!ann) {
+      return c.json({ error: 'Announcement not found' }, 404);
+    }
+    if (ann.teacherId !== session.userId) {
+      return c.json({ error: 'Unauthorized' }, 403);
+    }
+
+    await kv.delete(`announcement:${announcementId}`);
+
+    // 인덱스에서도 제거
+    const teacherAnns = await kv.get(`teacher_announcements:${session.userId}`) || [];
+    await kv.set(`teacher_announcements:${session.userId}`, teacherAnns.filter((id: string) => id !== announcementId));
+
+    if (ann.classId) {
+      const classAnns = await kv.get(`class_announcements:${ann.classId}`) || [];
+      await kv.set(`class_announcements:${ann.classId}`, classAnns.filter((id: string) => id !== announcementId));
+    } else {
+      const globalAnns = await kv.get('global_announcements') || [];
+      await kv.set('global_announcements', globalAnns.filter((id: string) => id !== announcementId));
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Announcement delete error:', error);
+    return c.json({ error: 'Failed to delete announcement', details: error.message }, 500);
+  }
+});
+
+// 학생: 내가 속한 학급의 공지사항 조회
+app.get('/student/announcements', async (c) => {
+  try {
+    const session = await getSession(c);
+    if (!session) {
+      return c.json({ error: 'Auth required' }, 401);
+    }
+
+    // 학생의 학급 정보 조회
+    const studentClasses = await kv.get(`student_classes:${session.userId}`) || [];
+    const announcements: any[] = [];
+    const seen = new Set<string>();
+
+    // 전체 공지
+    const globalIds = await kv.get('global_announcements') || [];
+    for (const id of globalIds) {
+      if (!seen.has(id)) {
+        const ann = await kv.get(`announcement:${id}`);
+        if (ann) {
+          announcements.push(ann);
+          seen.add(id);
+        }
+      }
+    }
+
+    // 소속 학급 공지
+    for (const classId of studentClasses) {
+      const classIds = await kv.get(`class_announcements:${classId}`) || [];
+      for (const id of classIds) {
+        if (!seen.has(id)) {
+          const ann = await kv.get(`announcement:${id}`);
+          if (ann) {
+            announcements.push(ann);
+            seen.add(id);
+          }
+        }
+      }
+    }
+
+    // 최신순 정렬, 고정 공지 먼저
+    announcements.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    // 읽음 처리 정보 추가
+    const readIds = await kv.get(`student_read_announcements:${session.userId}`) || [];
+    const readSet = new Set(readIds);
+    const result = announcements.map(ann => ({
+      ...ann,
+      isRead: readSet.has(ann.id)
+    }));
+
+    return c.json({ announcements: result });
+  } catch (error) {
+    console.log('Student announcements error:', error);
+    return c.json({ error: 'Failed to fetch announcements', details: error.message }, 500);
+  }
+});
+
+// 학생: 공지사항 읽음 처리
+app.post('/student/announcements/:id/read', async (c) => {
+  try {
+    const session = await getSession(c);
+    if (!session) {
+      return c.json({ error: 'Auth required' }, 401);
+    }
+
+    const announcementId = c.req.param('id');
+    const readIds = await kv.get(`student_read_announcements:${session.userId}`) || [];
+    if (!readIds.includes(announcementId)) {
+      readIds.push(announcementId);
+      await kv.set(`student_read_announcements:${session.userId}`, readIds);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Announcement read error:', error);
+    return c.json({ error: 'Failed to mark as read', details: error.message }, 500);
+  }
+});
+
 Deno.serve(app.fetch);
