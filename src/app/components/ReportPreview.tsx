@@ -5,7 +5,6 @@ import { ArrowLeft, Download, Users, MessageSquare, Clock,
 } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { useAlert } from './AlertProvider';
 
 interface ReportPreviewProps {
@@ -115,105 +114,233 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
   }
 
   async function handleDownloadPDF() {
-    if (!reportRef.current) return;
     setDownloading(true);
-
     try {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const W = 210;
+      const MARGIN = 18;
+      const CONTENT_W = W - MARGIN * 2;
+      let y = 0;
 
-      const element = reportRef.current;
+      const C = {
+        primary: '#E8734A',
+        green: '#16a34a',
+        blue: '#1d4ed8',
+        purple: '#7c3aed',
+        pink: '#db2777',
+        gray900: '#111827',
+        gray600: '#4b5563',
+        gray400: '#9ca3af',
+        border: '#e5e7eb',
+        bgLight: '#f9fafb',
+        white: '#ffffff',
+      };
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        onclone: (clonedDoc) => {
-          // 스타일시트에서 oklab/oklch 색상 함수 규칙을 모두 제거
-          const sheets = Array.from(clonedDoc.styleSheets);
-          sheets.forEach((sheet) => {
-            try {
-              const rules = Array.from(sheet.cssRules || []);
-              rules.forEach((rule: any) => {
-                if (rule.style) {
-                  const propsToCheck = ['color', 'background-color', 'border-color', 'outline-color', 'fill', 'stroke'];
-                  propsToCheck.forEach((prop) => {
-                    const val = rule.style.getPropertyValue(prop);
-                    if (val && /oklab\(|oklch\(|color-mix\(/i.test(val)) {
-                      rule.style.removeProperty(prop);
-                    }
-                  });
-                  if (rule.style.cssText && /oklab\(|oklch\(|color-mix\(/i.test(rule.style.cssText)) {
-                    const varPattern = /--([\w-]+)\s*:\s*(?:oklab|oklch|color-mix)\([^;]+;/gi;
-                    rule.style.cssText = rule.style.cssText.replace(varPattern, '');
-                  }
-                }
-              });
-            } catch {
-              // cross-origin 시트는 무시
-            }
-          });
-
-          // 모든 엘리먼트에 인라인으로 안전한 색상 강제 적용
-          const allEls = Array.from(clonedDoc.querySelectorAll('*')) as HTMLElement[];
-          const originalEls = Array.from(element.querySelectorAll('*')) as HTMLElement[];
-
-          allEls.forEach((el, i) => {
-            const orig = originalEls[i];
-            if (!orig) return;
-
-            const cs = window.getComputedStyle(orig);
-
-            const safeBg = cs.backgroundColor;
-            if (safeBg && safeBg !== 'rgba(0, 0, 0, 0)') {
-              el.style.setProperty('background-color', safeBg, 'important');
-            }
-
-            const safeColor = cs.color;
-            if (safeColor) {
-              el.style.setProperty('color', safeColor, 'important');
-            }
-
-            const safeBorder = cs.borderColor;
-            if (safeBorder) {
-              el.style.setProperty('border-color', safeBorder, 'important');
-            }
-
-            el.style.setProperty('background-image', 'none', 'important');
-            el.style.animation = 'none';
-            el.style.transition = 'none';
-          });
-        },
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+      function splitText(text: string, maxW: number, fontSize: number): string[] {
+        pdf.setFontSize(fontSize);
+        return pdf.splitTextToSize(text, maxW);
       }
 
-      pdf.save(`AI와토론해요_운영결과_${new Date().toLocaleDateString()}.pdf`);
-      
+      function checkPageBreak(needed: number) {
+        if (y + needed > 277) { pdf.addPage(); y = MARGIN; }
+      }
+
+      function drawSection(title: string, accentColor: string, drawContent: () => number) {
+        const contentH = drawContent();
+        const boxH = 10 + contentH + 6;
+        checkPageBreak(boxH + 6);
+        pdf.setFillColor(accentColor);
+        pdf.rect(MARGIN, y, 3, boxH, 'F');
+        pdf.setFillColor(C.white);
+        pdf.setDrawColor(C.border);
+        pdf.setLineWidth(0.3);
+        pdf.rect(MARGIN + 3, y, CONTENT_W - 3, boxH, 'FD');
+        pdf.setTextColor(accentColor);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(title, MARGIN + 8, y + 7);
+        const innerY = y + 13;
+        drawContent(innerY);
+        y += boxH + 5;
+      }
+
+      // ── 헤더 ──────────────────────────────────────────────
+      pdf.setFillColor(C.primary);
+      pdf.rect(0, 0, W, 38, 'F');
+      pdf.setTextColor(C.white);
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('AI Debate', MARGIN, 16);
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('학급 운영 결과 리포트', MARGIN, 23);
+      const dateStr = new Date().toLocaleDateString('ko-KR');
+      pdf.setFontSize(8);
+      pdf.text(dateStr, W - MARGIN, 23, { align: 'right' });
+      y = 48;
+
+      // ── 통계 카드 4개 ─────────────────────────────────────
+      const stats = [
+        { label: '총 참여 학생', value: `${reportData.totalParticipants}명`, color: C.blue },
+        { label: '총 토론 세션', value: `${reportData.totalSessions}회`, color: C.purple },
+        { label: '평균 토론 길이', value: `${reportData.averageDebateTime}턴`, color: C.green },
+        { label: '찬성 / 반대', value: `${reportData.positionRatio[0]?.value ?? 0}% / ${reportData.positionRatio[1]?.value ?? 0}%`, color: C.pink },
+      ];
+      const cardW = (CONTENT_W - 6) / 4;
+      stats.forEach((st, i) => {
+        const cx = MARGIN + i * (cardW + 2);
+        pdf.setFillColor(C.white);
+        pdf.setDrawColor(C.border);
+        pdf.setLineWidth(0.4);
+        pdf.roundedRect(cx, y, cardW, 24, 2, 2, 'FD');
+        pdf.setFillColor(st.color);
+        pdf.rect(cx, y, cardW, 3, 'F');
+        pdf.setTextColor(C.gray400);
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(st.label, cx + cardW / 2, y + 9, { align: 'center' });
+        pdf.setTextColor(st.color);
+        pdf.setFontSize(13);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(st.value, cx + cardW / 2, y + 20, { align: 'center' });
+      });
+      y += 32;
+
+      // ── 입장 비율 바 ───────────────────────────────────────
+      checkPageBreak(22);
+      pdf.setTextColor(C.gray900);
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('입장 비율', MARGIN, y + 5);
+
+      const proVal = reportData.positionRatio[0]?.value ?? 50;
+      const conVal = reportData.positionRatio[1]?.value ?? 50;
+      const barY = y + 9;
+      const barH = 6;
+      const proW = (CONTENT_W * proVal) / 100;
+
+      pdf.setFillColor(C.green);
+      pdf.roundedRect(MARGIN, barY, proW, barH, 1, 1, 'F');
+      pdf.setFillColor(C.pink);
+      pdf.roundedRect(MARGIN + proW, barY, CONTENT_W - proW, barH, 1, 1, 'F');
+
+      pdf.setTextColor(C.green);
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`찬성 ${proVal}%`, MARGIN, barY + barH + 5);
+      pdf.setTextColor(C.pink);
+      pdf.text(`반대 ${conVal}%`, W - MARGIN, barY + barH + 5, { align: 'right' });
+      y += 30;
+
+      // ── 인기 주제 TOP 3 ────────────────────────────────────
+      if (reportData.topTopics?.length > 0) {
+        checkPageBreak(10 + reportData.topTopics.length * 12 + 6);
+        pdf.setFillColor(C.primary);
+        pdf.rect(MARGIN, y, 3, 10 + reportData.topTopics.length * 12 + 6, 'F');
+        pdf.setFillColor(C.white);
+        pdf.setDrawColor(C.border);
+        pdf.setLineWidth(0.3);
+        pdf.rect(MARGIN + 3, y, CONTENT_W - 3, 10 + reportData.topTopics.length * 12 + 6, 'FD');
+        pdf.setTextColor(C.primary);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('인기 주제 TOP 3', MARGIN + 8, y + 7);
+        const medals = ['#f59e0b', '#9ca3af', '#ea580c'];
+        reportData.topTopics.slice(0, 3).forEach((topic: any, i: number) => {
+          const rowY = y + 13 + i * 12;
+          pdf.setFillColor(medals[i]);
+          pdf.circle(MARGIN + 13, rowY + 3, 3.5, 'F');
+          pdf.setTextColor(C.white);
+          pdf.setFontSize(7);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(String(i + 1), MARGIN + 13, rowY + 4.5, { align: 'center' });
+          pdf.setTextColor(C.gray900);
+          pdf.setFontSize(9);
+          pdf.setFont('helvetica', 'bold');
+          const titleLines = splitText(topic.title, CONTENT_W - 30, 9);
+          pdf.text(titleLines[0] || '', MARGIN + 20, rowY + 4);
+          pdf.setTextColor(C.gray400);
+          pdf.setFontSize(7.5);
+          pdf.setFont('helvetica', 'normal');
+          pdf.text(`${topic.count}회 토론`, W - MARGIN - 4, rowY + 4, { align: 'right' });
+        });
+        y += 10 + reportData.topTopics.length * 12 + 11;
+      }
+
+      // ── 평균 평가 점수 ─────────────────────────────────────
+      const scoreItems = [
+        { label: '주장 명확성', value: reportData.averageScores?.logic ?? 0, color: C.primary },
+        { label: '근거 사용', value: reportData.averageScores?.evidence ?? 0, color: C.green },
+        { label: '주제 충실도', value: reportData.averageScores?.engagement ?? 0, color: C.blue },
+      ];
+      const scoreBoxH = 10 + scoreItems.length * 12 + 6;
+      checkPageBreak(scoreBoxH + 6);
+      pdf.setFillColor(C.blue);
+      pdf.rect(MARGIN, y, 3, scoreBoxH, 'F');
+      pdf.setFillColor(C.white);
+      pdf.setDrawColor(C.border);
+      pdf.setLineWidth(0.3);
+      pdf.rect(MARGIN + 3, y, CONTENT_W - 3, scoreBoxH, 'FD');
+      pdf.setTextColor(C.blue);
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('평균 평가 점수', MARGIN + 8, y + 7);
+      scoreItems.forEach((si, i) => {
+        const rowY = y + 13 + i * 12;
+        pdf.setTextColor(C.gray600);
+        pdf.setFontSize(8.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(si.label, MARGIN + 8, rowY + 4);
+        pdf.setTextColor(si.color);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`${si.value} / 5`, W - MARGIN - 4, rowY + 4, { align: 'right' });
+        const barW2 = CONTENT_W - 20;
+        pdf.setFillColor(C.border);
+        pdf.roundedRect(MARGIN + 8, rowY + 6, barW2, 3, 1, 1, 'F');
+        pdf.setFillColor(si.color);
+        pdf.roundedRect(MARGIN + 8, rowY + 6, barW2 * (si.value / 5), 3, 1, 1, 'F');
+      });
+      y += scoreBoxH + 5;
+
+      // ── 운영 요약 ──────────────────────────────────────────
+      const summaryItems = [
+        { label: '필터 조건', text: reportData.summary?.filterCondition || '' },
+        { label: '주요 성과', text: reportData.summary?.mainAchievements || '' },
+        { label: '참여도 분석', text: reportData.summary?.participation || '' },
+      ];
+      summaryItems.forEach(({ label, text }) => {
+        if (!text) return;
+        const lines = splitText(text, CONTENT_W - 10, 9);
+        const boxH = 10 + lines.length * 5 + 6;
+        checkPageBreak(boxH + 6);
+        pdf.setFillColor(C.purple);
+        pdf.rect(MARGIN, y, 3, boxH, 'F');
+        pdf.setFillColor(C.white);
+        pdf.setDrawColor(C.border);
+        pdf.setLineWidth(0.3);
+        pdf.rect(MARGIN + 3, y, CONTENT_W - 3, boxH, 'FD');
+        pdf.setTextColor(C.purple);
+        pdf.setFontSize(8.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(label, MARGIN + 8, y + 7);
+        pdf.setTextColor(C.gray600);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        lines.forEach((line, li) => pdf.text(line, MARGIN + 8, y + 13 + li * 5));
+        y += boxH + 5;
+      });
+
+      // ── 푸터 ───────────────────────────────────────────────
+      checkPageBreak(14);
+      pdf.setDrawColor(C.border);
+      pdf.setLineWidth(0.3);
+      pdf.line(MARGIN, y + 4, W - MARGIN, y + 4);
+      pdf.setTextColor(C.gray400);
+      pdf.setFontSize(7.5);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('AI Debate — 토론으로 더 나은 생각을', W / 2, y + 10, { align: 'center' });
+
+      pdf.save(`AI와토론해요_운영결과_${dateStr}.pdf`);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
