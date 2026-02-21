@@ -119,205 +119,277 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
   async function handleDownloadPDF() {
     setDownloading(true);
     try {
+      // ── Canvas 기반 한글 렌더링 헬퍼 ─────────────────────────
+      // jsPDF 기본 폰트는 한글 미지원이므로 canvas에 그려 이미지로 삽입
+      const DPI = 3; // 배율 (높을수록 선명)
+      const PAGE_W_MM = 210;
+      const MARGIN_MM = 18;
+      const CONTENT_W_MM = PAGE_W_MM - MARGIN_MM * 2;
+      const MM_TO_PX = (mm: number) => mm * DPI * (96 / 25.4);
+
+      const canvasW = Math.round(MM_TO_PX(PAGE_W_MM));
+
+      // 텍스트를 canvas로 그려 mm 높이를 반환하는 함수
+      function measureWrappedLines(
+        text: string,
+        fontPx: number,
+        maxWidthPx: number,
+        fontFamily = 'Arial, sans-serif'
+      ): string[] {
+        const tc = document.createElement('canvas');
+        const ctx = tc.getContext('2d')!;
+        ctx.font = `${fontPx}px ${fontFamily}`;
+        const words = text.split('');
+        const lines: string[] = [];
+        let cur = '';
+        for (const ch of words) {
+          const test = cur + ch;
+          if (ctx.measureText(test).width > maxWidthPx && cur.length > 0) {
+            lines.push(cur);
+            cur = ch;
+          } else {
+            cur = test;
+          }
+        }
+        if (cur) lines.push(cur);
+        return lines.length > 0 ? lines : [''];
+      }
+
+      // canvas 블록을 PDF에 이미지로 삽입
+      function drawCanvasBlock(
+        pdf: jsPDF,
+        renderFn: (ctx: CanvasRenderingContext2D, cW: number) => number,
+        yMM: number
+      ): number {
+        const tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = canvasW;
+        tmpCanvas.height = 4000; // 충분히 크게
+        const ctx = tmpCanvas.getContext('2d')!;
+        const heightPx = renderFn(ctx, canvasW);
+        // 실제 높이로 자르기
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = canvasW;
+        finalCanvas.height = Math.ceil(heightPx);
+        const fCtx = finalCanvas.getContext('2d')!;
+        fCtx.drawImage(tmpCanvas, 0, 0);
+        const imgData = finalCanvas.toDataURL('image/png');
+        const heightMM = (heightPx / DPI) * (25.4 / 96);
+        pdf.addImage(imgData, 'PNG', 0, yMM, PAGE_W_MM, heightMM);
+        return heightMM;
+      }
+
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const W = 210;
-      const MARGIN = 18;
-      const CONTENT_W = W - MARGIN * 2;
-      let y = 0;
+      let yMM = 0;
 
       const C = {
-        primary: '#E8734A',
-        green: '#16a34a',
-        blue: '#1d4ed8',
-        gray900: '#111827',
-        gray600: '#4b5563',
-        gray400: '#9ca3af',
-        border: '#e5e7eb',
-        bgLight: '#f9fafb',
-        white: '#ffffff',
+        primary: '#E8734A', green: '#16a34a', blue: '#1d4ed8',
+        gray900: '#111827', gray600: '#4b5563', gray400: '#9ca3af',
+        border: '#e5e7eb', bgLight: '#f9fafb', white: '#ffffff',
       };
 
-      // 텍스트 줄바꿈 헬퍼
-      function splitText(text: string, maxW: number, fontSize: number): string[] {
-        pdf.setFontSize(fontSize);
-        return pdf.splitTextToSize(text, maxW);
+      function hexToRgb(hex: string) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return { r, g, b };
+      }
+      function setFill(ctx: CanvasRenderingContext2D, hex: string, alpha = 1) {
+        const { r, g, b } = hexToRgb(hex);
+        ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+      }
+      function setStroke(ctx: CanvasRenderingContext2D, hex: string) {
+        const { r, g, b } = hexToRgb(hex);
+        ctx.strokeStyle = `rgb(${r},${g},${b})`;
       }
 
-      // 새 페이지 또는 여백 체크
-      function checkPageBreak(needed: number) {
-        if (y + needed > 277) {
-          pdf.addPage();
-          y = MARGIN;
-        }
-      }
-
-      // ── 헤더 영역 ──────────────────────────────────────────
-      pdf.setFillColor(C.primary);
-      pdf.rect(0, 0, W, 38, 'F');
-
-      pdf.setTextColor(C.white);
-      pdf.setFontSize(20);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('AI Debate', MARGIN, 16);
-
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('토론 결과 리포트', MARGIN, 23);
-
+      const MG = Math.round(MM_TO_PX(MARGIN_MM));
+      const CW = Math.round(MM_TO_PX(CONTENT_W_MM));
       const dateStr = new Date().toLocaleDateString('ko-KR');
-      pdf.setFontSize(8);
-      pdf.text(dateStr, W - MARGIN, 23, { align: 'right' });
-
-      y = 48;
-
-      // ── 주제 ───────────────────────────────────────────────
-      pdf.setFillColor(C.bgLight);
-      pdf.roundedRect(MARGIN, y, CONTENT_W, 16, 3, 3, 'F');
-      pdf.setDrawColor(C.border);
-      pdf.setLineWidth(0.3);
-      pdf.roundedRect(MARGIN, y, CONTENT_W, 16, 3, 3, 'S');
-
-      pdf.setTextColor(C.gray400);
-      pdf.setFontSize(7.5);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('토론 주제', MARGIN + 5, y + 5.5);
-
-      pdf.setTextColor(C.gray900);
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'bold');
-      const topicLines = splitText(debate?.topicTitle || '', CONTENT_W - 10, 10);
-      pdf.text(topicLines[0] || '', MARGIN + 5, y + 12);
-      y += 24;
-
-      // ── 점수 카드 3개 ──────────────────────────────────────
       const scores = [
         { label: '참여도', value: evaluation.participationScore },
         { label: '논리력', value: evaluation.logicScore },
         { label: '근거력', value: evaluation.evidenceScore },
       ];
-      const avgScore = Math.round(scores.reduce((s, c) => s + c.value, 0) / 3);
-      const cardW = (CONTENT_W - 8) / 3;
+      const pdfAvgScore = Math.round(scores.reduce((s, c) => s + c.value, 0) / 3);
 
-      scores.forEach((sc, i) => {
-        const cx = MARGIN + i * (cardW + 4);
-        pdf.setFillColor(C.white);
-        pdf.setDrawColor(C.border);
-        pdf.setLineWidth(0.4);
-        pdf.roundedRect(cx, y, cardW, 28, 3, 3, 'FD');
+      // ── 1. 헤더 + 주제 + 점수 블록 ────────────────────────────
+      const headerH = drawCanvasBlock(pdf, (ctx, cW) => {
+        let cy = 0;
 
-        pdf.setTextColor(C.gray600);
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(sc.label, cx + cardW / 2, y + 8, { align: 'center' });
+        // 헤더 배경
+        const headerPx = Math.round(MM_TO_PX(42));
+        setFill(ctx, C.primary);
+        ctx.fillRect(0, cy, cW, headerPx);
 
-        const scoreColor = sc.value >= 85 ? '#16a34a' : sc.value >= 70 ? '#ca8a04' : C.primary;
-        pdf.setTextColor(scoreColor);
-        pdf.setFontSize(20);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(String(sc.value), cx + cardW / 2, y + 21, { align: 'center' });
+        ctx.fillStyle = C.white;
+        ctx.font = `bold ${Math.round(MM_TO_PX(7))}px Arial, sans-serif`;
+        ctx.fillText('AI Debate', MG, cy + Math.round(MM_TO_PX(14)));
+        ctx.font = `${Math.round(MM_TO_PX(3.5))}px Arial, sans-serif`;
+        ctx.fillText('토론 결과 리포트', MG, cy + Math.round(MM_TO_PX(22)));
+        ctx.textAlign = 'right';
+        ctx.font = `${Math.round(MM_TO_PX(3))}px Arial, sans-serif`;
+        ctx.fillText(dateStr, cW - MG, cy + Math.round(MM_TO_PX(22)));
+        ctx.textAlign = 'left';
+        cy += headerPx;
+
+        const gap = Math.round(MM_TO_PX(6));
+        cy += gap;
+
+        // 주제 박스
+        const topicFontPx = Math.round(MM_TO_PX(4));
+        const topicLines = measureWrappedLines(debate?.topicTitle || '', topicFontPx, CW - MG * 0.5);
+        const topicBoxH = Math.round(MM_TO_PX(8)) + topicLines.length * Math.round(topicFontPx * 1.5);
+        setFill(ctx, C.bgLight);
+        ctx.fillRect(MG, cy, CW, topicBoxH);
+        setStroke(ctx, C.border);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(MG, cy, CW, topicBoxH);
+        ctx.fillStyle = C.gray400;
+        ctx.font = `${Math.round(MM_TO_PX(3))}px Arial, sans-serif`;
+        ctx.fillText('토론 주제', MG + Math.round(MM_TO_PX(3)), cy + Math.round(MM_TO_PX(5)));
+        ctx.fillStyle = C.gray900;
+        ctx.font = `bold ${topicFontPx}px Arial, sans-serif`;
+        topicLines.forEach((line, li) => {
+          ctx.fillText(line, MG + Math.round(MM_TO_PX(3)), cy + Math.round(MM_TO_PX(8)) + li * Math.round(topicFontPx * 1.5));
+        });
+        cy += topicBoxH + gap;
+
+        // 점수 카드
+        const cardW = Math.round((CW - gap * 2) / 3);
+        const cardH = Math.round(MM_TO_PX(28));
+        scores.forEach((sc, i) => {
+          const cx2 = MG + i * (cardW + gap);
+          setFill(ctx, C.white);
+          ctx.fillRect(cx2, cy, cardW, cardH);
+          setStroke(ctx, C.border);
+          ctx.lineWidth = 1;
+          ctx.strokeRect(cx2, cy, cardW, cardH);
+          // 레이블
+          ctx.fillStyle = C.gray600;
+          ctx.font = `${Math.round(MM_TO_PX(3.2))}px Arial, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(sc.label, cx2 + cardW / 2, cy + Math.round(MM_TO_PX(9)));
+          // 점수
+          const scoreCol = sc.value >= 85 ? C.green : sc.value >= 70 ? '#ca8a04' : C.primary;
+          ctx.fillStyle = scoreCol;
+          ctx.font = `bold ${Math.round(MM_TO_PX(9))}px Arial, sans-serif`;
+          ctx.fillText(String(sc.value), cx2 + cardW / 2, cy + Math.round(MM_TO_PX(21)));
+          ctx.textAlign = 'left';
+        });
+        // 평균 배지
+        const badgeW = Math.round(MM_TO_PX(28));
+        const badgeH = Math.round(MM_TO_PX(10));
+        const badgeX = MG + CW - badgeW;
+        const badgeY = cy - badgeH / 2 - gap / 2;
+        setFill(ctx, C.primary);
+        ctx.beginPath();
+        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
+        ctx.fill();
+        ctx.fillStyle = C.white;
+        ctx.font = `bold ${Math.round(MM_TO_PX(3))}px Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`평균 ${pdfAvgScore}점`, badgeX + badgeW / 2, badgeY + badgeH * 0.65);
+        ctx.textAlign = 'left';
+        cy += cardH + gap;
+
+        return cy;
+      }, yMM);
+      yMM += headerH;
+
+      function checkPage(neededMM: number) {
+        if (yMM + neededMM > 285) { pdf.addPage(); yMM = 10; }
+      }
+
+      // ── 섹션 블록 그리기 (한글 canvas) ────────────────────────
+      function drawKoreanSection(
+        title: string,
+        lines: string[],
+        accentColor: string,
+        bullets?: string[]
+      ) {
+        const fontPx = Math.round(MM_TO_PX(3.7));
+        const lineH = Math.round(fontPx * 1.65);
+        const titleFontPx = Math.round(MM_TO_PX(3.5));
+        const totalLines = lines.length;
+        const innerH = Math.round(MM_TO_PX(8)) + totalLines * lineH + Math.round(MM_TO_PX(4));
+        const sectionMM = (innerH / DPI) * (25.4 / 96) + 6;
+        checkPage(sectionMM);
+
+        const h = drawCanvasBlock(pdf, (ctx) => {
+          const accentBarW = Math.round(MM_TO_PX(2));
+          setFill(ctx, accentColor);
+          ctx.fillRect(MG, 0, accentBarW, innerH);
+          setFill(ctx, C.white);
+          ctx.fillRect(MG + accentBarW, 0, CW - accentBarW, innerH);
+          setStroke(ctx, C.border);
+          ctx.lineWidth = 0.8;
+          ctx.strokeRect(MG + accentBarW, 0, CW - accentBarW, innerH);
+          // 제목
+          ctx.fillStyle = accentColor;
+          ctx.font = `bold ${titleFontPx}px Arial, sans-serif`;
+          ctx.fillText(title, MG + Math.round(MM_TO_PX(4)), Math.round(MM_TO_PX(7)));
+          // 내용
+          ctx.fillStyle = C.gray600;
+          ctx.font = `${fontPx}px Arial, sans-serif`;
+          lines.forEach((line, i) => {
+            const lx = MG + Math.round(MM_TO_PX(bullets ? 6 : 4));
+            const ly = Math.round(MM_TO_PX(11)) + i * lineH;
+            if (bullets && bullets[i]) {
+              ctx.fillStyle = accentColor;
+              ctx.fillText(bullets[i], MG + Math.round(MM_TO_PX(3.5)), ly);
+              ctx.fillStyle = C.gray600;
+            }
+            ctx.fillText(line, lx, ly);
+          });
+          return innerH;
+        }, yMM);
+        yMM += h + 4;
+      }
+
+      // 총평 섹션
+      const feedbackText = evaluation.overallFeedback || '';
+      const feedbackFontPx = Math.round(MM_TO_PX(3.7));
+      const feedbackLines = measureWrappedLines(feedbackText, feedbackFontPx, CW - Math.round(MM_TO_PX(8)));
+      drawKoreanSection('AI 선생님의 총평', feedbackLines, C.primary);
+
+      // 잘한 점
+      const strengthItems: string[] = evaluation.strengths || [];
+      const strengthLines: string[] = [];
+      const strengthBullets: string[] = [];
+      strengthItems.forEach((item) => {
+        const wrapped = measureWrappedLines(item, feedbackFontPx, CW - Math.round(MM_TO_PX(12)));
+        wrapped.forEach((l, li) => {
+          strengthLines.push(l);
+          strengthBullets.push(li === 0 ? '✓' : '');
+        });
       });
+      drawKoreanSection('잘한 점 (Strengths)', strengthLines, C.green, strengthBullets);
 
-      // 평균 점수 배지
-      pdf.setFillColor(C.primary);
-      pdf.roundedRect(MARGIN + CONTENT_W - 32, y + 1, 32, 12, 3, 3, 'F');
-      pdf.setTextColor(C.white);
-      pdf.setFontSize(7.5);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`평균 ${avgScore}점`, MARGIN + CONTENT_W - 16, y + 8.5, { align: 'center' });
-
-      y += 36;
-
-      // ── 섹션 그리기 헬퍼 ────────────────────────────────────
-      function drawSection(title: string, content: string, accentColor: string) {
-        const lines = splitText(content, CONTENT_W - 10, 9.5);
-        const boxH = 10 + lines.length * 5.5 + 6;
-        checkPageBreak(boxH + 6);
-
-        // 왼쪽 강조 바
-        pdf.setFillColor(accentColor);
-        pdf.rect(MARGIN, y, 3, boxH, 'F');
-
-        pdf.setFillColor(C.white);
-        pdf.setDrawColor(C.border);
-        pdf.setLineWidth(0.3);
-        pdf.rect(MARGIN + 3, y, CONTENT_W - 3, boxH, 'FD');
-
-        pdf.setTextColor(accentColor);
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(title, MARGIN + 8, y + 7);
-
-        pdf.setTextColor(C.gray600);
-        pdf.setFontSize(9.5);
-        pdf.setFont('helvetica', 'normal');
-        lines.forEach((line, li) => {
-          pdf.text(line, MARGIN + 8, y + 13 + li * 5.5);
+      // 개선할 점
+      const improvItems: string[] = evaluation.improvements || [];
+      const improvLines: string[] = [];
+      const improvBullets: string[] = [];
+      improvItems.forEach((item) => {
+        const wrapped = measureWrappedLines(item, feedbackFontPx, CW - Math.round(MM_TO_PX(12)));
+        wrapped.forEach((l, li) => {
+          improvLines.push(l);
+          improvBullets.push(li === 0 ? '→' : '');
         });
-        y += boxH + 5;
-      }
-
-      // ── 리스트 섹션 헬퍼 ────────────────────────────────────
-      function drawListSection(title: string, items: string[], accentColor: string, bulletChar: string) {
-        if (!items || items.length === 0) return;
-        const allLines: { text: string; isFirst: boolean }[] = [];
-        items.forEach((item) => {
-          const wrapped = splitText(item, CONTENT_W - 18, 9.5);
-          wrapped.forEach((line, li) => allLines.push({ text: line, isFirst: li === 0 }));
-        });
-        const boxH = 10 + allLines.length * 5.5 + 6;
-        checkPageBreak(boxH + 6);
-
-        pdf.setFillColor(accentColor);
-        pdf.rect(MARGIN, y, 3, boxH, 'F');
-
-        pdf.setFillColor(C.white);
-        pdf.setDrawColor(C.border);
-        pdf.setLineWidth(0.3);
-        pdf.rect(MARGIN + 3, y, CONTENT_W - 3, boxH, 'FD');
-
-        pdf.setTextColor(accentColor);
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(title, MARGIN + 8, y + 7);
-
-        pdf.setFontSize(9.5);
-        pdf.setFont('helvetica', 'normal');
-        let lineY = y + 13;
-        allLines.forEach(({ text, isFirst }) => {
-          if (isFirst) {
-            pdf.setTextColor(accentColor);
-            pdf.text(bulletChar, MARGIN + 8, lineY);
-            pdf.setTextColor(C.gray600);
-            pdf.text(text, MARGIN + 14, lineY);
-          } else {
-            pdf.setTextColor(C.gray600);
-            pdf.text(text, MARGIN + 14, lineY);
-          }
-          lineY += 5.5;
-        });
-        y += boxH + 5;
-      }
-
-      // ── AI 총평 ────────────────────────────────────────────
-      drawSection('AI 선생님의 총평', evaluation.overallFeedback || '', C.primary);
-
-      // ── 잘한 점 ────────────────────────────────────────────
-      drawListSection('잘한 점', evaluation.strengths || [], C.green, '✓');
-
-      // ── 개선할 점 ──────────────────────────────────────────
-      drawListSection('개선할 점', evaluation.improvements || [], C.blue, '→');
+      });
+      drawKoreanSection('개선할 점 (Improvements)', improvLines, C.blue, improvBullets);
 
       // ── 푸터 ───────────────────────────────────────────────
-      checkPageBreak(14);
+      checkPage(14);
       pdf.setDrawColor(C.border);
       pdf.setLineWidth(0.3);
-      pdf.line(MARGIN, y + 4, W - MARGIN, y + 4);
+      pdf.line(MARGIN_MM, yMM + 4, PAGE_W_MM - MARGIN_MM, yMM + 4);
       pdf.setTextColor(C.gray400);
       pdf.setFontSize(7.5);
       pdf.setFont('helvetica', 'normal');
-      pdf.text('AI Debate — 토론으로 더 나은 생각을', W / 2, y + 10, { align: 'center' });
+      pdf.text('AI Debate', PAGE_W_MM / 2, yMM + 10, { align: 'center' });
 
-      pdf.save(`토론결과_${debate?.topicTitle || '결과'}_${dateStr}.pdf`);
+      const safeTitle = (debate?.topicTitle || '결과').replace(/[\\/:*?"<>|]/g, '_').slice(0, 30);
+      pdf.save(`토론결과_${safeTitle}_${dateStr}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       showAlert('PDF 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
@@ -332,6 +404,13 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
     return { bg: 'from-orange-50 to-orange-100', border: 'border-orange-200', text: 'text-orange-700', gradient: 'bg-gradient-primary' };
   }
 
+  function getResultBanner(avgScore: number) {
+    if (avgScore >= 85) return { emoji: '🏆', text: '훌륭한 토론이었어요!', sub: '논리적이고 풍부한 근거로 최고의 토론을 보여줬어요.' };
+    if (avgScore >= 70) return { emoji: '👏', text: '잘 해냈어요!', sub: '좋은 토론을 완료했어요. 조금만 더 연습하면 더 나아질 거예요.' };
+    if (avgScore >= 50) return { emoji: '💪', text: '토론을 완료했어요!', sub: '참여해줘서 고마워요. 더 많은 근거를 준비하면 훨씬 나아질 거예요.' };
+    return { emoji: '📝', text: '토론을 마쳤어요', sub: '다음 토론에서는 더 구체적인 주장과 근거를 준비해보세요.' };
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -344,6 +423,7 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
   }
 
   const avgScore = Math.round((evaluation.participationScore + evaluation.logicScore + evaluation.evidenceScore) / 3);
+  const banner = getResultBanner(avgScore);
   const scoreColor = getScoreColor(avgScore);
 
   return (
@@ -387,16 +467,24 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div ref={reportRef} className="space-y-8">
-            {/* Celebration Banner */}
+            {/* Result Banner */}
             <div className="text-center mb-8 animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-accent rounded-full mb-6 shadow-medium animate-bounce-subtle">
+              <div className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full mb-6 shadow-medium animate-bounce-subtle ${
+                avgScore >= 85 ? 'bg-gradient-secondary' :
+                avgScore >= 70 ? 'bg-gradient-accent' :
+                avgScore >= 50 ? 'bg-gradient-primary' :
+                'bg-gray-400'
+              }`}>
                 <Trophy className="w-6 h-6 text-white" />
-                <span className="text-lg font-bold text-white">토론 완료!</span>
+                <span className="text-lg font-bold text-white">
+                  {avgScore >= 85 ? '최고 토론자!' : avgScore >= 70 ? '토론 완료!' : avgScore >= 50 ? '토론 완료' : '토론 마침'}
+                </span>
               </div>
-              <h1 className="text-4xl sm:text-5xl font-bold text-text-primary mb-4">
-                🎉 대단해요! 🎉
+              <h1 className="text-4xl sm:text-5xl font-bold text-text-primary mb-3">
+                {banner.emoji} {banner.text}
               </h1>
-              <p className="text-xl text-text-secondary">
+              <p className="text-base text-text-secondary mb-1">{banner.sub}</p>
+              <p className="text-lg text-text-secondary font-medium">
                 {debate?.topicTitle} 토론을 완료했습니다
               </p>
             </div>

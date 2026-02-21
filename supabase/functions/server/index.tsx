@@ -1110,26 +1110,41 @@ app.post("/make-server-7273e82a/debates/:debateId/evaluate", async (c) => {
         throw new Error('OPENAI_API_KEY not configured');
       }
 
-      const evaluationPrompt = `당신은 학생 토론을 평가하는 교육 전문가입니다. 다음 토론 내용을 분석하여 상세한 평가를 제공해주세요.
+      const evaluationPrompt = `당신은 학생 토론을 공정하게 평가하는 교육 전문가입니다. 다음 토론 내용을 면밀히 분석하여 정직한 평가를 제공해주세요.
 
 ${conversationText}
 
-다음 형식으로 평가해주세요:
+[평가 기준 - 반드시 실제 대화 내용을 기반으로 평가하세요]
 
-1. 참여도 점수 (0-100): 학생이 토론에 얼마나 적극적으로 참여했는지 평가
-2. 논리력 점수 (0-100): 주장의 논리성과 일관성 평가
-3. 근거력 점수 (0-100): 주장을 뒷받침하는 근거의 충분성과 적절성 평가
-4. 총평: 전체적인 토론 수행에 대한 따뜻하고 격려적인 평가 (2-3문장)
-5. 잘한 점 3가지: 학생의 대화 내용에서 구체적인 예시를 인용하여 칭찬
-6. 개선할 점 2-3가지: 학생의 대화 내용에서 구체적인 예시를 인용하여 개선 방향 제시
+참여도 (0-100):
+- 90점 이상: 5회 이상 발언, 각 발언이 2문장 이상, 상대 의견에 직접 반응
+- 70-89점: 3-4회 발언, 의견 표현 시도
+- 50-69점: 1-2회 발언 또는 짧은 응답만
+- 49점 이하: 의미없는 단답, 주제 무관한 발언, 참여 거부
 
-평가는 초등학교 고학년~중학생 수준에 맞춰 쉽고 친근하게 작성해주세요.
+논리력 (0-100):
+- 90점 이상: 주장-근거-예시 구조 명확, 반론에 논리적 대응
+- 70-89점: 주장은 있으나 근거가 약함
+- 50-69점: 주장만 있고 근거 없음
+- 49점 이하: 주제와 무관한 발언, 논리 없음
+
+근거력 (0-100):
+- 90점 이상: 구체적 사례, 통계, 전문가 의견 등 인용
+- 70-89점: 일반적 경험이나 상식 수준의 근거
+- 50-69점: 막연한 주장만
+- 49점 이하: 근거 없음 또는 엉뚱한 내용
+
+총평: 실제 토론 내용을 언급하며 현실적인 피드백을 작성하세요. 잘했으면 칭찬, 부족하면 솔직하게 말하되 격려도 포함하세요.
+
+잘한 점: 실제 대화에서 구체적인 발언을 인용하여 작성하세요. 잘한 점이 없으면 "토론에 참여하려는 의지를 보여줬어요" 정도만 작성하세요.
+개선할 점: 실제 문제점을 구체적으로 지적해주세요.
+
 JSON 형식으로만 응답해주세요:
 {
-  "participationScore": 85,
-  "logicScore": 80,
-  "evidenceScore": 78,
-  "overallFeedback": "총평 내용...",
+  "participationScore": 점수,
+  "logicScore": 점수,
+  "evidenceScore": 점수,
+  "overallFeedback": "총평 (2-3문장, 실제 토론 내용 반영)",
   "strengths": ["잘한 점 1", "잘한 점 2", "잘한 점 3"],
   "improvements": ["개선할 점 1", "개선할 점 2"]
 }`;
@@ -1200,23 +1215,37 @@ JSON 형식으로만 응답해주세요:
 
       baseScore = Math.min(100, Math.max(0, baseScore));
 
+      // 실제 발언 품질 분석
+      const avgLength = studentMessages.reduce((sum: number, m: any) => sum + m.content.length, 0) / (messageCount || 1);
+      const hasSubstantiveContent = avgLength > 30 && messageCount >= 3;
+
+      const feedbackMsg = baseScore >= 80
+        ? `총 ${messageCount}개의 발언으로 적극적으로 참여했습니다. 논리적인 주장을 펼치려고 노력한 모습이 인상적이에요. 더 구체적인 근거를 추가하면 훨씬 설득력 있는 토론이 될 거예요!`
+        : baseScore >= 60
+        ? `총 ${messageCount}개의 발언으로 토론에 참여했습니다. 의견을 표현하려는 시도는 좋았지만, 주장을 뒷받침할 근거가 조금 부족했어요. 다음에는 구체적인 예시나 사례를 준비해보세요.`
+        : baseScore >= 40
+        ? `총 ${messageCount}개의 발언이 있었지만, 토론 주제에 맞는 체계적인 주장이 부족했습니다. 토론 전에 자신의 입장과 근거를 미리 정리하면 훨씬 나은 토론을 할 수 있어요.`
+        : `토론 참여가 매우 미흡했습니다. 의미 있는 주장이나 근거 없이 토론을 마쳤어요. 다음에는 토론 주제를 충분히 생각하고 자신의 입장을 논리적으로 설명해보세요.`;
+
       detailedEvaluation = {
         participationScore: baseScore,
-        logicScore: Math.max(0, baseScore - 5),
-        evidenceScore: Math.max(0, baseScore - 8),
-        overallFeedback: `총 ${messageCount}개의 발언으로 토론에 참여했습니다. ${
-          baseScore >= 80 ? '논리적이고 적극적인 참여가 돋보였습니다. 계속 이런 자세로 토론하면 더욱 성장할 수 있을 거예요! 🌟' :
-          baseScore >= 60 ? '토론 참여가 양호했습니다. 더 구체적인 근거를 제시하면 더욱 설득력 있는 토론이 될 거예요! 💪' :
-          '토론에 참여해주셔서 감사합니다. 다음에는 더 많은 의견과 근거를 제시해보면 좋겠어요. 연습하면 점점 나아질 거예요! 🚀'
-        }`,
-        strengths: [
-          '토론 주제에 대해 자신의 입장을 표현하려고 노력했어요',
-          '상대방의 의견을 경청하는 태도를 보여주었어요',
-          messageCount >= 5 ? '여러 번 발언하며 적극적으로 참여했어요' : '토론에 참여하려는 의지를 보여주었어요'
+        logicScore: Math.max(0, hasSubstantiveContent ? baseScore - 5 : Math.min(baseScore, 35)),
+        evidenceScore: Math.max(0, hasSubstantiveContent ? baseScore - 8 : Math.min(baseScore, 30)),
+        overallFeedback: feedbackMsg,
+        strengths: hasSubstantiveContent ? [
+          '토론에 여러 차례 발언하며 참여 의지를 보여줬어요',
+          '상대방의 의견을 들으며 토론 흐름을 이어갔어요',
+          messageCount >= 5 ? '지속적으로 발언하며 토론을 이어갔어요' : '토론에 참여하려는 노력을 보여줬어요'
+        ] : [
+          '토론에 참여하려는 의지를 보여줬어요'
         ],
-        improvements: [
-          '구체적인 예시나 사례를 더 많이 활용해보세요',
-          '상대방의 주장에 대한 반론을 더 체계적으로 준비해보세요'
+        improvements: hasSubstantiveContent ? [
+          '주장을 뒷받침할 구체적인 근거(사례, 통계, 경험)를 준비해보세요',
+          '상대방의 주장에 대해 직접적으로 반론을 제기해보세요'
+        ] : [
+          '토론 전 자신의 주장과 근거를 미리 정리해보세요',
+          '단순한 동의나 짧은 응답보다 논리적인 주장을 펼쳐보세요',
+          '토론 주제에 집중하여 관련 내용으로만 발언해보세요'
         ]
       };
     }
