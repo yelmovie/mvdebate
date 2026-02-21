@@ -2869,83 +2869,102 @@ app.put('/make-server-7273e82a/classes/:classId/settings', async (c) => {
 });
 
 // Data export endpoint
+// 교사: 통합 PDF 데이터 내보내기 (모든 학급 데이터를 JSON으로 반환, 프론트에서 PDF 생성)
 app.get('/make-server-7273e82a/teacher/export', async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
-    if (!user) {
+    if (!user || user.role !== 'teacher') {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const format = c.req.query('format') || 'csv';
-    const type = c.req.query('type') || 'students';
     const startDate = c.req.query('startDate');
     const endDate = c.req.query('endDate');
 
-    // Get teacher's classes
     const teacherClasses = await kv.get(`teacher:${user.id}:classes`) || [];
-    
-    let data = [];
-    
-    if (type === 'students') {
-      // Export students data
-      for (const classId of teacherClasses) {
-        const classData = await kv.get(`class:${classId}`);
-        const studentIds = await kv.get(`class:${classId}:students`) || [];
-        
-        for (const studentId of studentIds) {
-          const studentData = await kv.get(`user:${studentId}`);
-          if (studentData) {
-            data.push({
-              className: classData.name,
-              studentName: studentData.name,
-              email: studentData.email,
-              joinedDate: studentData.createdAt
-            });
+    const exportData: any[] = [];
+
+    for (const classId of teacherClasses) {
+      const classData = await kv.get(`class:${classId}`);
+      if (!classData) continue;
+
+      const studentIds = await kv.get(`class:${classId}:students`) || [];
+      const classStudents: any[] = [];
+
+      for (const studentId of studentIds) {
+        const studentData = await kv.get(`user:${studentId}`);
+        if (!studentData) continue;
+
+        const debateIds = await kv.get(`student:${studentId}:debates`) || [];
+        const studentDebates: any[] = [];
+        let totalScore = 0;
+        let scoredCount = 0;
+
+        for (const debateId of debateIds) {
+          const debate = await kv.get(`debate:${debateId}`);
+          if (!debate) continue;
+
+          const evaluation = await kv.get(`debate:${debateId}:evaluation`);
+          const messages = await kv.get(`debate:${debateId}:messages`) || [];
+          const studentMessages = messages.filter((m: any) => m.role === 'student');
+          const messageCount = evaluation?.messageCount ?? studentMessages.length;
+
+          const score = evaluation
+            ? Math.round((evaluation.participationScore + evaluation.logicScore + evaluation.evidenceScore) / 3)
+            : 0;
+
+          if (score > 0) { totalScore += score; scoredCount++; }
+
+          // 날짜 필터
+          if (startDate || endDate) {
+            const debateDate = new Date(debate.createdAt);
+            if (startDate && debateDate < new Date(startDate)) continue;
+            if (endDate && debateDate > new Date(endDate + 'T23:59:59')) continue;
           }
+
+          studentDebates.push({
+            id: debateId,
+            topicTitle: debate.topicTitle || debate.topic || '토론 주제',
+            position: debate.position === 'for' ? '찬성' : '반대',
+            status: debate.status === 'completed' ? '완료' : '진행 중',
+            createdAt: debate.createdAt ? new Date(debate.createdAt).toLocaleDateString('ko-KR') : '-',
+            messageCount,
+            score,
+            participationScore: evaluation?.participationScore ?? 0,
+            logicScore: evaluation?.logicScore ?? 0,
+            evidenceScore: evaluation?.evidenceScore ?? 0,
+            feedback: evaluation?.overallFeedback || '',
+          });
         }
+
+        classStudents.push({
+          id: studentId,
+          name: studentData.name,
+          email: studentData.email,
+          joinedAt: studentData.createdAt ? new Date(studentData.createdAt).toLocaleDateString('ko-KR') : '-',
+          totalDebates: debateIds.length,
+          completedDebates: studentDebates.filter(d => d.status === '완료').length,
+          avgScore: scoredCount > 0 ? Math.round(totalScore / scoredCount) : 0,
+          debates: studentDebates,
+        });
       }
-    } else if (type === 'debates') {
-      // Export debates data
-      for (const classId of teacherClasses) {
-        const classData = await kv.get(`class:${classId}`);
-        const studentIds = await kv.get(`class:${classId}:students`) || [];
-        
-        for (const studentId of studentIds) {
-          const debates = await kv.getByPrefix(`debate:${studentId}:`);
-          for (const debate of debates) {
-            data.push({
-              className: classData.name,
-              studentName: debate.studentName,
-              topic: debate.topic,
-              date: debate.createdAt,
-              score: debate.score
-            });
-          }
-        }
-      }
+
+      exportData.push({
+        classId,
+        className: classData.name,
+        classCode: classData.classCode,
+        totalStudents: classStudents.length,
+        students: classStudents,
+      });
     }
 
-    // Generate file content based on format
-    let content = '';
-    let contentType = 'text/csv';
-    let filename = `export-${type}-${new Date().toISOString().split('T')[0]}.csv`;
+    const today = new Date().toLocaleDateString('ko-KR');
 
-    if (format === 'csv') {
-      if (data.length > 0) {
-        const headers = Object.keys(data[0]).join(',');
-        const rows = data.map(row => Object.values(row).join(',')).join('\n');
-        content = headers + '\n' + rows;
-      }
-    } else if (format === 'json') {
-      content = JSON.stringify(data, null, 2);
-      contentType = 'application/json';
-      filename = `export-${type}-${new Date().toISOString().split('T')[0]}.json`;
-    }
-
-    return c.json({ 
-      data: content,
-      contentType,
-      filename
+    return c.json({
+      success: true,
+      exportedAt: today,
+      teacherName: user.name || '선생님',
+      dateRange: startDate && endDate ? `${startDate} ~ ${endDate}` : '전체 기간',
+      classes: exportData,
     });
   } catch (error) {
     console.log('Export error:', error);
@@ -2993,13 +3012,13 @@ app.post('/make-server-7273e82a/support/contact', async (c) => {
   }
 });
 
-// ===== 공지사항 엔드포인트 =====
+// ===== 공지사항 엔드포인트 (prefix 포함) =====
 
 // 교사: 공지사항 작성
-app.post('/announcements', async (c) => {
+app.post('/make-server-7273e82a/announcements', async (c) => {
   try {
-    const session = await getSession(c);
-    if (!session || session.role !== 'teacher') {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user || user.role !== 'teacher') {
       return c.json({ error: 'Teacher auth required' }, 401);
     }
 
@@ -3015,8 +3034,8 @@ app.post('/announcements', async (c) => {
 
     const announcement = {
       id: announcementId,
-      teacherId: session.userId,
-      teacherName: session.name || '선생님',
+      teacherId: user.id,
+      teacherName: user.name || '선생님',
       classId: classId || null,
       title,
       content,
@@ -3028,17 +3047,15 @@ app.post('/announcements', async (c) => {
     await kv.set(`announcement:${announcementId}`, announcement);
 
     // 교사의 공지사항 목록 인덱스 업데이트
-    const teacherAnnouncements = await kv.get(`teacher_announcements:${session.userId}`) || [];
+    const teacherAnnouncements = await kv.get(`teacher_announcements:${user.id}`) || [];
     teacherAnnouncements.unshift(announcementId);
-    await kv.set(`teacher_announcements:${session.userId}`, teacherAnnouncements);
+    await kv.set(`teacher_announcements:${user.id}`, teacherAnnouncements);
 
-    // 특정 학급 공지사항 인덱스 업데이트
     if (classId) {
       const classAnnouncements = await kv.get(`class_announcements:${classId}`) || [];
       classAnnouncements.unshift(announcementId);
       await kv.set(`class_announcements:${classId}`, classAnnouncements);
     } else {
-      // 전체 공지 인덱스
       const globalAnnouncements = await kv.get('global_announcements') || [];
       globalAnnouncements.unshift(announcementId);
       await kv.set('global_announcements', globalAnnouncements);
@@ -3052,20 +3069,27 @@ app.post('/announcements', async (c) => {
 });
 
 // 교사: 자신의 공지사항 목록 조회
-app.get('/teacher/announcements', async (c) => {
+app.get('/make-server-7273e82a/teacher/announcements', async (c) => {
   try {
-    const session = await getSession(c);
-    if (!session || session.role !== 'teacher') {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user || user.role !== 'teacher') {
       return c.json({ error: 'Teacher auth required' }, 401);
     }
 
-    const announcementIds = await kv.get(`teacher_announcements:${session.userId}`) || [];
-    const announcements = [];
+    const announcementIds = await kv.get(`teacher_announcements:${user.id}`) || [];
+    const announcements: any[] = [];
 
     for (const id of announcementIds) {
       const ann = await kv.get(`announcement:${id}`);
       if (ann) announcements.push(ann);
     }
+
+    // 최신순 정렬, 고정 공지 먼저
+    announcements.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
     return c.json({ announcements });
   } catch (error) {
@@ -3075,10 +3099,10 @@ app.get('/teacher/announcements', async (c) => {
 });
 
 // 교사: 공지사항 삭제
-app.delete('/announcements/:id', async (c) => {
+app.delete('/make-server-7273e82a/announcements/:id', async (c) => {
   try {
-    const session = await getSession(c);
-    if (!session || session.role !== 'teacher') {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user || user.role !== 'teacher') {
       return c.json({ error: 'Teacher auth required' }, 401);
     }
 
@@ -3088,15 +3112,14 @@ app.delete('/announcements/:id', async (c) => {
     if (!ann) {
       return c.json({ error: 'Announcement not found' }, 404);
     }
-    if (ann.teacherId !== session.userId) {
+    if (ann.teacherId !== user.id) {
       return c.json({ error: 'Unauthorized' }, 403);
     }
 
     await kv.delete(`announcement:${announcementId}`);
 
-    // 인덱스에서도 제거
-    const teacherAnns = await kv.get(`teacher_announcements:${session.userId}`) || [];
-    await kv.set(`teacher_announcements:${session.userId}`, teacherAnns.filter((id: string) => id !== announcementId));
+    const teacherAnns = await kv.get(`teacher_announcements:${user.id}`) || [];
+    await kv.set(`teacher_announcements:${user.id}`, teacherAnns.filter((id: string) => id !== announcementId));
 
     if (ann.classId) {
       const classAnns = await kv.get(`class_announcements:${ann.classId}`) || [];
@@ -3114,15 +3137,15 @@ app.delete('/announcements/:id', async (c) => {
 });
 
 // 학생: 내가 속한 학급의 공지사항 조회
-app.get('/student/announcements', async (c) => {
+app.get('/make-server-7273e82a/student/announcements', async (c) => {
   try {
-    const session = await getSession(c);
-    if (!session) {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user) {
       return c.json({ error: 'Auth required' }, 401);
     }
 
-    // 학생의 학급 정보 조회
-    const studentClasses = await kv.get(`student_classes:${session.userId}`) || [];
+    // 학생의 학급 정보 조회 (my-classes 데이터 활용)
+    const studentClassIds = await kv.get(`student:${user.id}:classes`) || [];
     const announcements: any[] = [];
     const seen = new Set<string>();
 
@@ -3131,22 +3154,30 @@ app.get('/student/announcements', async (c) => {
     for (const id of globalIds) {
       if (!seen.has(id)) {
         const ann = await kv.get(`announcement:${id}`);
-        if (ann) {
-          announcements.push(ann);
-          seen.add(id);
-        }
+        if (ann) { announcements.push(ann); seen.add(id); }
       }
     }
 
     // 소속 학급 공지
-    for (const classId of studentClasses) {
-      const classIds = await kv.get(`class_announcements:${classId}`) || [];
-      for (const id of classIds) {
+    for (const classId of studentClassIds) {
+      const classAnnIds = await kv.get(`class_announcements:${classId}`) || [];
+      for (const id of classAnnIds) {
         if (!seen.has(id)) {
           const ann = await kv.get(`announcement:${id}`);
-          if (ann) {
-            announcements.push(ann);
-            seen.add(id);
+          if (ann) { announcements.push(ann); seen.add(id); }
+        }
+      }
+    }
+
+    // 학생이 join한 클래스에서도 탐색 (student_classes 키)
+    const studentClasses2 = await kv.get(`student_classes:${user.id}`) || [];
+    for (const classId of studentClasses2) {
+      if (!studentClassIds.includes(classId)) {
+        const classAnnIds = await kv.get(`class_announcements:${classId}`) || [];
+        for (const id of classAnnIds) {
+          if (!seen.has(id)) {
+            const ann = await kv.get(`announcement:${id}`);
+            if (ann) { announcements.push(ann); seen.add(id); }
           }
         }
       }
@@ -3160,7 +3191,7 @@ app.get('/student/announcements', async (c) => {
     });
 
     // 읽음 처리 정보 추가
-    const readIds = await kv.get(`student_read_announcements:${session.userId}`) || [];
+    const readIds = await kv.get(`student_read_announcements:${user.id}`) || [];
     const readSet = new Set(readIds);
     const result = announcements.map(ann => ({
       ...ann,
@@ -3175,18 +3206,18 @@ app.get('/student/announcements', async (c) => {
 });
 
 // 학생: 공지사항 읽음 처리
-app.post('/student/announcements/:id/read', async (c) => {
+app.post('/make-server-7273e82a/student/announcements/:id/read', async (c) => {
   try {
-    const session = await getSession(c);
-    if (!session) {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user) {
       return c.json({ error: 'Auth required' }, 401);
     }
 
     const announcementId = c.req.param('id');
-    const readIds = await kv.get(`student_read_announcements:${session.userId}`) || [];
+    const readIds = await kv.get(`student_read_announcements:${user.id}`) || [];
     if (!readIds.includes(announcementId)) {
       readIds.push(announcementId);
-      await kv.set(`student_read_announcements:${session.userId}`, readIds);
+      await kv.set(`student_read_announcements:${user.id}`, readIds);
     }
 
     return c.json({ success: true });
