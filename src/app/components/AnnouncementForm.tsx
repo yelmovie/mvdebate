@@ -104,8 +104,8 @@ export default function AnnouncementForm({ onBack, onSuccess, demoMode = false, 
           classId: selectedClass === 'all' ? null : selectedClass,
           title,
           content,
-          isPinned
-        })
+          isPinned,
+        }),
       });
 
       showAlert('공지사항이 등록되었습니다!', 'success');

@@ -3012,53 +3012,53 @@ app.post('/make-server-7273e82a/support/contact', async (c) => {
   }
 });
 
-// ===== 공지사항 엔드포인트 (prefix 포함) =====
+// ===== 공지사항 엔드포인트 =====
 
 // 교사: 공지사항 작성
 app.post('/make-server-7273e82a/announcements', async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
-    if (!user || user.role !== 'teacher') {
-      return c.json({ error: 'Teacher auth required' }, 401);
-    }
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
     const body = await c.req.json();
     const { classId, title, content, isPinned } = body;
-
-    if (!title || !content) {
-      return c.json({ error: 'Title and content are required' }, 400);
-    }
+    if (!title || !content) return c.json({ error: 'Title and content are required' }, 400);
 
     const announcementId = crypto.randomUUID();
     const now = new Date().toISOString();
+    const teacherName = (user as any).user_metadata?.name
+      || (user as any).name
+      || (await kv.get(`user:${user.id}`))?.name
+      || '선생님';
 
     const announcement = {
       id: announcementId,
       teacherId: user.id,
-      teacherName: user.name || '선생님',
+      teacherName,
       classId: classId || null,
       title,
       content,
-      isPinned: isPinned || false,
+      isPinned: !!isPinned,
       createdAt: now,
-      updatedAt: now
     };
 
     await kv.set(`announcement:${announcementId}`, announcement);
 
-    // 교사의 공지사항 목록 인덱스 업데이트
-    const teacherAnnouncements = await kv.get(`teacher_announcements:${user.id}`) || [];
-    teacherAnnouncements.unshift(announcementId);
-    await kv.set(`teacher_announcements:${user.id}`, teacherAnnouncements);
+    // 교사별 공지 목록
+    const teacherList = await kv.get(`teacher_announcements:${user.id}`) || [];
+    teacherList.unshift(announcementId);
+    await kv.set(`teacher_announcements:${user.id}`, teacherList);
 
+    // 전체 공지 목록 (학생이 조회)
+    const globalList = await kv.get('global_announcements') || [];
+    globalList.unshift(announcementId);
+    await kv.set('global_announcements', globalList);
+
+    // 특정 학급 공지
     if (classId) {
-      const classAnnouncements = await kv.get(`class_announcements:${classId}`) || [];
-      classAnnouncements.unshift(announcementId);
-      await kv.set(`class_announcements:${classId}`, classAnnouncements);
-    } else {
-      const globalAnnouncements = await kv.get('global_announcements') || [];
-      globalAnnouncements.unshift(announcementId);
-      await kv.set('global_announcements', globalAnnouncements);
+      const classList = await kv.get(`class_announcements:${classId}`) || [];
+      classList.unshift(announcementId);
+      await kv.set(`class_announcements:${classId}`, classList);
     }
 
     return c.json({ success: true, announcement });
@@ -3068,15 +3068,13 @@ app.post('/make-server-7273e82a/announcements', async (c) => {
   }
 });
 
-// 교사: 자신의 공지사항 목록 조회
+// 교사: 공지사항 목록 조회
 app.get('/make-server-7273e82a/teacher/announcements', async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
-    if (!user || user.role !== 'teacher') {
-      return c.json({ error: 'Teacher auth required' }, 401);
-    }
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
-    const announcementIds = await kv.get(`teacher_announcements:${user.id}`) || [];
+    const announcementIds: string[] = await kv.get(`teacher_announcements:${user.id}`) || [];
     const announcements: any[] = [];
 
     for (const id of announcementIds) {
@@ -3084,7 +3082,6 @@ app.get('/make-server-7273e82a/teacher/announcements', async (c) => {
       if (ann) announcements.push(ann);
     }
 
-    // 최신순 정렬, 고정 공지 먼저
     announcements.sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
@@ -3099,34 +3096,28 @@ app.get('/make-server-7273e82a/teacher/announcements', async (c) => {
 });
 
 // 교사: 공지사항 삭제
-app.delete('/make-server-7273e82a/announcements/:id', async (c) => {
+app.delete('/make-server-7273e82a/announcements/:annId', async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
-    if (!user || user.role !== 'teacher') {
-      return c.json({ error: 'Teacher auth required' }, 401);
-    }
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
-    const announcementId = c.req.param('id');
+    const announcementId = c.req.param('annId');
     const ann = await kv.get(`announcement:${announcementId}`);
-
-    if (!ann) {
-      return c.json({ error: 'Announcement not found' }, 404);
-    }
-    if (ann.teacherId !== user.id) {
-      return c.json({ error: 'Unauthorized' }, 403);
-    }
+    if (!ann) return c.json({ error: 'Not found' }, 404);
 
     await kv.delete(`announcement:${announcementId}`);
 
-    const teacherAnns = await kv.get(`teacher_announcements:${user.id}`) || [];
-    await kv.set(`teacher_announcements:${user.id}`, teacherAnns.filter((id: string) => id !== announcementId));
+    const removeId = (list: string[]) => list.filter((id: string) => id !== announcementId);
+
+    const teacherList = await kv.get(`teacher_announcements:${user.id}`) || [];
+    await kv.set(`teacher_announcements:${user.id}`, removeId(teacherList));
+
+    const globalList = await kv.get('global_announcements') || [];
+    await kv.set('global_announcements', removeId(globalList));
 
     if (ann.classId) {
-      const classAnns = await kv.get(`class_announcements:${ann.classId}`) || [];
-      await kv.set(`class_announcements:${ann.classId}`, classAnns.filter((id: string) => id !== announcementId));
-    } else {
-      const globalAnns = await kv.get('global_announcements') || [];
-      await kv.set('global_announcements', globalAnns.filter((id: string) => id !== announcementId));
+      const classList = await kv.get(`class_announcements:${ann.classId}`) || [];
+      await kv.set(`class_announcements:${ann.classId}`, removeId(classList));
     }
 
     return c.json({ success: true });
@@ -3136,21 +3127,17 @@ app.delete('/make-server-7273e82a/announcements/:id', async (c) => {
   }
 });
 
-// 학생: 내가 속한 학급의 공지사항 조회
+// 학생: 공지사항 조회 (전체 + 소속 학급)
 app.get('/make-server-7273e82a/student/announcements', async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Auth required' }, 401);
-    }
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
-    // 학생의 학급 정보 조회 (my-classes 데이터 활용)
-    const studentClassIds = await kv.get(`student:${user.id}:classes`) || [];
     const announcements: any[] = [];
     const seen = new Set<string>();
 
     // 전체 공지
-    const globalIds = await kv.get('global_announcements') || [];
+    const globalIds: string[] = await kv.get('global_announcements') || [];
     for (const id of globalIds) {
       if (!seen.has(id)) {
         const ann = await kv.get(`announcement:${id}`);
@@ -3158,9 +3145,13 @@ app.get('/make-server-7273e82a/student/announcements', async (c) => {
       }
     }
 
-    // 소속 학급 공지
-    for (const classId of studentClassIds) {
-      const classAnnIds = await kv.get(`class_announcements:${classId}`) || [];
+    // 소속 학급 공지 (여러 KV key 경로 시도)
+    const classIds1: string[] = await kv.get(`student:${user.id}:classes`) || [];
+    const classIds2: string[] = await kv.get(`student_classes:${user.id}`) || [];
+    const allClassIds = [...new Set([...classIds1, ...classIds2])];
+
+    for (const classId of allClassIds) {
+      const classAnnIds: string[] = await kv.get(`class_announcements:${classId}`) || [];
       for (const id of classAnnIds) {
         if (!seen.has(id)) {
           const ann = await kv.get(`announcement:${id}`);
@@ -3169,34 +3160,15 @@ app.get('/make-server-7273e82a/student/announcements', async (c) => {
       }
     }
 
-    // 학생이 join한 클래스에서도 탐색 (student_classes 키)
-    const studentClasses2 = await kv.get(`student_classes:${user.id}`) || [];
-    for (const classId of studentClasses2) {
-      if (!studentClassIds.includes(classId)) {
-        const classAnnIds = await kv.get(`class_announcements:${classId}`) || [];
-        for (const id of classAnnIds) {
-          if (!seen.has(id)) {
-            const ann = await kv.get(`announcement:${id}`);
-            if (ann) { announcements.push(ann); seen.add(id); }
-          }
-        }
-      }
-    }
-
-    // 최신순 정렬, 고정 공지 먼저
     announcements.sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-    // 읽음 처리 정보 추가
-    const readIds = await kv.get(`student_read_announcements:${user.id}`) || [];
+    const readIds: string[] = await kv.get(`student_read_announcements:${user.id}`) || [];
     const readSet = new Set(readIds);
-    const result = announcements.map(ann => ({
-      ...ann,
-      isRead: readSet.has(ann.id)
-    }));
+    const result = announcements.map(ann => ({ ...ann, isRead: readSet.has(ann.id) }));
 
     return c.json({ announcements: result });
   } catch (error) {
@@ -3206,15 +3178,13 @@ app.get('/make-server-7273e82a/student/announcements', async (c) => {
 });
 
 // 학생: 공지사항 읽음 처리
-app.post('/make-server-7273e82a/student/announcements/:id/read', async (c) => {
+app.post('/make-server-7273e82a/student/announcements/:annId/read', async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
-    if (!user) {
-      return c.json({ error: 'Auth required' }, 401);
-    }
+    if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
-    const announcementId = c.req.param('id');
-    const readIds = await kv.get(`student_read_announcements:${user.id}`) || [];
+    const announcementId = c.req.param('annId');
+    const readIds: string[] = await kv.get(`student_read_announcements:${user.id}`) || [];
     if (!readIds.includes(announcementId)) {
       readIds.push(announcementId);
       await kv.set(`student_read_announcements:${user.id}`, readIds);
