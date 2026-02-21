@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { apiCall } from '../../lib/api';
+import { apiCall } from '../../utils/supabase';
 import { ArrowLeft, Send } from 'lucide-react';
 import { useAlert } from './AlertProvider';
 
@@ -25,7 +25,7 @@ export default function AnnouncementForm({ onBack, onSuccess, demoMode = false, 
     try {
       if (demoMode) {
         setTimeout(() => {
-          showAlert('공�??�항???�록?�었?�니??');
+          showAlert('공지사항이 등록되었습니다!');
           onSuccess();
           setLoading(false);
         }, 500);
@@ -42,7 +42,7 @@ export default function AnnouncementForm({ onBack, onSuccess, demoMode = false, 
         })
       });
 
-      showAlert('공�??�항???�록?�었?�니??');
+      showAlert('공지사항이 등록되었습니다!');
       onSuccess();
     } catch (error: any) {
       showAlert(error.message);
@@ -59,16 +59,17 @@ export default function AnnouncementForm({ onBack, onSuccess, demoMode = false, 
           className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          ?�아가�?        </button>
+          돌아가기
+        </button>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">텍스트</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">📢 새 공지사항 작성</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Target Class */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ?�???�급
+                대상 학급
               </label>
               <select
                 value={selectedClass}
@@ -76,7 +77,7 @@ export default function AnnouncementForm({ onBack, onSuccess, demoMode = false, 
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                 required
               >
-                <option value="all">텍스트</option>
+                <option value="all">전체 반 (모든 주제)</option>
                 {classes.map((cls) => (
                   <option key={cls.id} value={cls.id}>
                     {cls.name}
@@ -88,7 +89,7 @@ export default function AnnouncementForm({ onBack, onSuccess, demoMode = false, 
             {/* Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ?�목
+                제목
               </label>
               <input
                 type="text"
@@ -103,12 +104,12 @@ export default function AnnouncementForm({ onBack, onSuccess, demoMode = false, 
             {/* Content */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ?�용
+                내용
               </label>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="입력하세요"
+                placeholder="공지 내용을 입력하세요"
                 rows={8}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
                 required
@@ -125,7 +126,7 @@ export default function AnnouncementForm({ onBack, onSuccess, demoMode = false, 
                 className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
               />
               <label htmlFor="pinned" className="text-sm font-medium text-gray-700">
-                ?�단 고정 (중요 공�?)
+                상단 고정 (중요 공지)
               </label>
             </div>
 
@@ -143,10 +144,10 @@ export default function AnnouncementForm({ onBack, onSuccess, demoMode = false, 
                 disabled={loading}
                 className="flex-1 py-3 bg-pink-500 text-white rounded-xl hover:bg-pink-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2"
               >
-                {loading ? '?�록�?..' : (
+                {loading ? '등록중...' : (
                   <>
                     <Send className="w-5 h-5" />
-                    ?�성 ?�료
+                    작성 완료
                   </>
                 )}
               </button>

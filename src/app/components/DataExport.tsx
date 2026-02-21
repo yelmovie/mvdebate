@@ -4,7 +4,7 @@ import {
   FileSpreadsheet, CheckCircle, Calendar, Users,
   TrendingUp, MessageSquare, Trophy, Clock
 } from 'lucide-react';
-import { apiCall } from '../../lib/api';
+import { apiCall } from '../../utils/supabase';
 import { useAlert } from './AlertProvider';
 
 interface DataExportProps {
@@ -29,7 +29,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
 
   async function handleExport() {
     if (!selectedFormat || !selectedType) {
-      showAlert('작업이 완료되었습니다.', 'error');
+      showAlert('내보내기 형식과 데이터 유형을 선택해주세요.', 'error');
       return;
     }
 
@@ -43,7 +43,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
           students: '학생 명단',
           debates: '토론 기록',
           scores: '점수 데이터',
-          activity: '활동 이력',
+          activity: '활동 내역',
           full: '전체 데이터'
         };
         
@@ -62,7 +62,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
         };
         
         setExportHistory([newExport, ...exportHistory]);
-        showAlert(`${typeNames[selectedType]} ?�이?��? ${selectedFormat.toUpperCase()} ?�식?�로 ?�보?�기 ?�었?�니??`, 'success');
+        showAlert(`${typeNames[selectedType]} 데이터가 ${selectedFormat.toUpperCase()} 형식으로 내보내기 되었습니다.`, 'success');
         setLoading(false);
         return;
       }
@@ -107,7 +107,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
     {
       type: 'debates' as ExportType,
       title: '토론 기록',
-      description: '모든 토론 세션의 상세 이력',
+      description: '모든 토론 세션의 상세 내역',
       icon: MessageSquare,
       color: 'from-green-400 to-green-500'
     },
@@ -120,7 +120,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
     },
     {
       type: 'activity' as ExportType,
-      title: '활동 이력',
+      title: '활동 내역',
       description: '학생들의 참여 기록 및 통계',
       icon: TrendingUp,
       color: 'from-purple-400 to-purple-500'
@@ -138,30 +138,30 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
     {
       format: 'csv' as ExportFormat,
       title: 'CSV',
-      description: '설명',
+      description: 'Excel과 호환되는 표 형식',
       icon: Table,
-      recommended: '텍스트'
+      recommended: '간단한 데이터 분석에 적합'
     },
     {
       format: 'excel' as ExportFormat,
       title: 'Excel',
-      description: 'Microsoft Excel ?�일',
+      description: 'Microsoft Excel 파일',
       icon: FileSpreadsheet,
-      recommended: '텍스트'
+      recommended: '상세한 데이터 분석에 최적'
     },
     {
       format: 'pdf' as ExportFormat,
       title: 'PDF',
-      description: '설명',
+      description: '인쇄 및 공유에 적합한 문서',
       icon: FileText,
-      recommended: '텍스트'
+      recommended: '보고서 형태로 보관'
     },
     {
       format: 'json' as ExportFormat,
       title: 'JSON',
-      description: '?�로그래�?처리가 가?�한 ?�식',
+      description: '프로그래밍 처리가 가능한 형식',
       icon: FileText,
-      recommended: '텍스트'
+      recommended: '개발자 또는 시스템 연동'
     }
   ];
 
@@ -187,8 +187,8 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                   <Download className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-text-primary">텍스트</h1>
-                  <p className="text-sm text-text-secondary">텍스트</p>
+                  <h1 className="text-xl font-bold text-text-primary">데이터 내보내기</h1>
+                  <p className="text-sm text-text-secondary">학급 데이터를 파일로 저장하세요</p>
                 </div>
               </div>
             </div>
@@ -203,7 +203,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
               <div className="bg-white rounded-3xl p-6 shadow-soft border-2 border-border animate-fade-in-up">
                 <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-secondary" />
-                  ?�보???�이???�택
+                  내보낼 데이터 선택
                 </h3>
                 
                 <div className="grid gap-3">
@@ -243,7 +243,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
               <div className="bg-white rounded-3xl p-6 shadow-soft border-2 border-border animate-fade-in-up" style={{ animationDelay: '100ms' }}>
                 <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                   <FileSpreadsheet className="w-5 h-5 text-primary" />
-                  ?�일 ?�식 ?�택
+                  파일 형식 선택
                 </h3>
                 
                 <div className="grid grid-cols-2 gap-3">
@@ -269,7 +269,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                           )}
                         </div>
                         <p className="text-xs text-text-secondary mb-1">{option.description}</p>
-                        <p className="text-xs text-primary font-semibold">텍스트</p>
+                        <p className="text-xs text-primary font-semibold">💡 {option.recommended}</p>
                       </button>
                     );
                   })}
@@ -280,13 +280,14 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
               <div className="bg-white rounded-3xl p-6 shadow-soft border-2 border-border animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                 <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-accent" />
-                  기간 ?�정 (?�택?�항)
+                  기간 설정 (선택사항)
                 </h3>
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-text-secondary mb-2">
-                      ?�작??                    </label>
+                      시작일
+                    </label>
                     <input
                       type="date"
                       value={dateRange.start}
@@ -296,7 +297,8 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-text-secondary mb-2">
-                      종료??                    </label>
+                      종료일
+                    </label>
                     <input
                       type="date"
                       value={dateRange.end}
@@ -309,7 +311,8 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                 {dateRange.start && dateRange.end && (
                   <div className="mt-4 p-3 bg-accent/10 rounded-2xl">
                     <p className="text-sm text-accent font-semibold">
-                      ?�� {dateRange.start} ~ {dateRange.end} 기간???�이?��? ?�보?�기?�니??                    </p>
+                      📅 {dateRange.start} ~ {dateRange.end} 기간의 데이터가 내보내기됩니다
+                    </p>
                   </div>
                 )}
               </div>
@@ -322,7 +325,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                 style={{ animationDelay: '300ms' }}
               >
                 <Download className="w-6 h-6" />
-                {loading ? '?�보?�기 �?..' : '?�이???�보?�기'}
+                {loading ? '내보내기 중...' : '데이터 내보내기'}
               </button>
             </div>
 
@@ -334,15 +337,15 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                   <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
                     <FileText className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="font-bold text-blue-900">텍스트</h3>
+                  <h3 className="font-bold text-blue-900">내보내기 통계</h3>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-blue-700">�??�보?�기 ?�수</span>
+                    <span className="text-sm text-blue-700">총 내보내기 횟수</span>
                     <span className="text-2xl font-bold text-blue-900">{exportHistory.length}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-blue-700">가??최근 ?�보?�기</span>
+                    <span className="text-sm text-blue-700">가장 최근 내보내기</span>
                     <span className="text-sm font-semibold text-blue-900">
                       {exportHistory[0]?.date.split(' ')[0]}
                     </span>
@@ -354,7 +357,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
               <div className="bg-white rounded-3xl p-6 shadow-soft border-2 border-border animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                 <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-primary" />
-                  ?�보?�기 기록
+                  내보내기 기록
                 </h3>
                 
                 <div className="space-y-3">
@@ -375,7 +378,7 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-text-secondary">{item.size}</span>
                         <button className="text-xs text-primary hover:text-primary/80 font-semibold">
-                          ?�시 ?�운로드
+                          다시 다운로드
                         </button>
                       </div>
                     </div>
@@ -391,19 +394,19 @@ export default function DataExport({ onBack, demoMode = false }: DataExportProps
                 <ul className="space-y-2 text-sm text-yellow-800">
                   <li className="flex items-start gap-2">
                     <span className="text-yellow-600 mt-0.5">•</span>
-                    <span>CSV는 Excel에서 바로 열 수 있어요.</span>
+                    <span>CSV는 Excel에서 바로 열 수 있어요</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-yellow-600 mt-0.5">•</span>
-                    <span>PDF는 인쇄와 공유에 적합해요.</span>
+                    <span>PDF는 인쇄나 공유에 적합해요</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-yellow-600 mt-0.5">•</span>
-                    <span>JSON은 데이터 백업에 적합해요.</span>
+                    <span>정기적으로 백업하는 것을 추천해요</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-yellow-600 mt-0.5">•</span>
-                    <span>Excel 형식은 차트와 그래프 생성에 유용해요.</span>
+                    <span>Excel 형식은 차트와 그래프 작성에 유용해요</span>
                   </li>
                 </ul>
               </div>

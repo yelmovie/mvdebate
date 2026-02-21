@@ -4,7 +4,7 @@ import {
   User, Users, Sparkles 
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import teacherIcon from 'figma:asset/3f8181192f198645523b0ded5b1b684057187d0e.png';
+import teacherIcon from '../../assets/3f8181192f198645523b0ded5b1b684057187d0e.png';
 
 interface HeaderProps {
   user: {

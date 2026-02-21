@@ -1,48 +1,46 @@
-import React from 'react';
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
 
-export type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info';
-export type BadgeSize = 'sm' | 'md';
+import { cn } from "./utils";
 
-interface BadgeProps {
-  children: React.ReactNode;
-  variant?: BadgeVariant;
-  size?: BadgeSize;
-  icon?: React.ReactNode;
-  className?: string;
-}
+const badgeVariants = cva(
+  "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+        destructive:
+          "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+        outline:
+          "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  },
+);
 
-const variantStyles: Record<BadgeVariant, string> = {
-  default: 'bg-muted text-text-primary',
-  success: 'bg-gradient-to-r from-green-50 to-green-100 text-green-700 border border-green-200',
-  warning: 'bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-700 border border-yellow-200',
-  error: 'bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-200',
-  info: 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200',
-};
+function Badge({
+  className,
+  variant,
+  asChild = false,
+  ...props
+}: React.ComponentProps<"span"> &
+  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot : "span";
 
-const sizeStyles: Record<BadgeSize, string> = {
-  sm: 'px-2 py-0.5 text-xs',
-  md: 'px-3 py-1 text-sm',
-};
-
-export function Badge({
-  children,
-  variant = 'default',
-  size = 'md',
-  icon,
-  className = '',
-}: BadgeProps) {
   return (
-    <span
-      className={`
-        inline-flex items-center gap-1.5
-        rounded-full font-semibold
-        ${variantStyles[variant]}
-        ${sizeStyles[size]}
-        ${className}
-      `}
-    >
-      {icon && <span className="flex items-center">{icon}</span>}
-      {children}
-    </span>
+    <Comp
+      data-slot="badge"
+      className={cn(badgeVariants({ variant }), className)}
+      {...props}
+    />
   );
 }
+
+export { Badge, badgeVariants };

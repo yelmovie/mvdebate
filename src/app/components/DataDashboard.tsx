@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiCall } from '../../lib/api';
+import { apiCall } from '../../utils/supabase';
 import { 
   ArrowLeft, Download, BarChart3, TrendingUp, Users, Filter,
   Award, FileText, PieChart, Gift, Mail
@@ -40,39 +40,39 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
   async function loadData() {
     if (demoMode) {
       // Mock student data
-            setStudents([
-        { id: 'student-1', name: 'Kim Cheolsu', email: 'kim@student.com', debatesCount: 8, averageScore: 85 },
-        { id: 'student-2', name: 'Lee Minsu', email: 'lee@student.com', debatesCount: 12, averageScore: 92 },
-        { id: 'student-3', name: 'Park Jihyo', email: 'park@student.com', debatesCount: 6, averageScore: 78 },
-        { id: 'student-4', name: 'Choi Minjeong', email: 'choi@student.com', debatesCount: 10, averageScore: 88 },
-        { id: 'student-5', name: 'Jung Yuna', email: 'jung@student.com', debatesCount: 15, averageScore: 95 },
-        { id: 'student-6', name: 'Kang Donghyun', email: 'kang@student.com', debatesCount: 4, averageScore: 72 },
-        { id: 'student-7', name: 'Yoon Somi', email: 'yoon@student.com', debatesCount: 9, averageScore: 87 },
-        { id: 'student-8', name: 'Song Kanghoon', email: 'song@student.com', debatesCount: 7, averageScore: 81 },
+      setStudents([
+        { id: 'student-1', name: '김철수', email: 'kim@student.com', debatesCount: 8, averageScore: 85 },
+        { id: 'student-2', name: '이영희', email: 'lee@student.com', debatesCount: 12, averageScore: 92 },
+        { id: 'student-3', name: '박민수', email: 'park@student.com', debatesCount: 6, averageScore: 78 },
+        { id: 'student-4', name: '최지원', email: 'choi@student.com', debatesCount: 10, averageScore: 88 },
+        { id: 'student-5', name: '정서연', email: 'jung@student.com', debatesCount: 15, averageScore: 95 },
+        { id: 'student-6', name: '강민호', email: 'kang@student.com', debatesCount: 4, averageScore: 72 },
+        { id: 'student-7', name: '윤지혜', email: 'yoon@student.com', debatesCount: 9, averageScore: 87 },
+        { id: 'student-8', name: '송준호', email: 'song@student.com', debatesCount: 7, averageScore: 81 }
       ]);
 
       // Mock dashboard data
       setDashboardData({
         characterStats: [
-          { name: 'Logical Arguer', count: 15 },
-          { name: 'Evidence Presenter', count: 12 },
-          { name: 'Friendly Debater', count: 10 },
-          { name: 'Neutral Analyst', count: 8 },
-          { name: 'Critical Thinker', count: 7 },
-          { name: 'Creative Debater', count: 6 },
-          { name: 'Calm Mediator', count: 5 },
-          { name: 'Passionate Speaker', count: 4 }
+          { name: '꼬리질문 보뱀', count: 15 },
+          { name: '팜씩한 검하는 형수', count: 12 },
+          { name: '친화한 연의', count: 10 },
+          { name: '발랄웃긴 민준', count: 8 },
+          { name: '철벽논리 지호', count: 7 },
+          { name: '사과왕 하늘', count: 6 },
+          { name: '유쾌한 해든', count: 5 },
+          { name: '뜨거운 감자 은비', count: 4 }
         ],
         positionRatio: [
           { name: '찬성', value: 59, color: '#10b981' },
           { name: '반대', value: 41, color: '#f43f5e' }
         ],
         radarData: [
-          { subject: '논리 정확성', score: 4.2, fullMark: 5 },
-          { subject: '근거 제시', score: 3.8, fullMark: 5 },
-          { subject: '언어 표현', score: 4.5, fullMark: 5 },
-          { subject: '반론 대응', score: 4.7, fullMark: 5 },
-          { subject: '결론 도출', score: 3.9, fullMark: 5 }
+          { subject: '주장 명확성', score: 4.2, fullMark: 5 },
+          { subject: '근거 사용', score: 3.8, fullMark: 5 },
+          { subject: '주제 충실도', score: 4.5, fullMark: 5 },
+          { subject: '토론 예절', score: 4.7, fullMark: 5 },
+          { subject: '비판적 사고', score: 3.9, fullMark: 5 }
         ]
       });
       return;
@@ -96,7 +96,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
   async function handleExport(type: 'pdf' | 'excel') {
     if (!dashboardData) return;
     
-    const filename = `report_${new Date().toLocaleDateString()}.${type === 'pdf' ? 'pdf' : 'xlsx'}`;
+    const filename = `토론데이터_${new Date().toLocaleDateString()}.${type === 'pdf' ? 'pdf' : 'xlsx'}`;
     
     // Export logic would go here
     showAlert(`${type.toUpperCase()} 다운로드: ${filename}`);
@@ -126,7 +126,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-text-secondary font-medium">텍스트</p>
+          <p className="text-text-secondary font-medium">데이터 불러오는 중...</p>
         </div>
       </div>
     );
@@ -149,12 +149,14 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                   className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
                 >
                   <ArrowLeft className="w-5 h-5" />
-                  ?�아가�?                </button>
+                  돌아가기
+                </button>
                 <div>
                   <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
                     <BarChart3 className="w-7 h-7 text-primary" />
-                    ?�이???�?�보??                  </h1>
-                  <p className="text-sm text-text-secondary">텍스트</p>
+                    데이터 대시보드
+                  </h1>
+                  <p className="text-sm text-text-secondary">학급 현황 및 통계 분석</p>
                 </div>
               </div>
             </div>
@@ -173,7 +175,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
               }`}
             >
               <Users className="w-5 h-5 inline mr-2" />
-              ?�생 ?�황
+              학생 현황
             </button>
             <button
               onClick={() => setViewMode('analytics')}
@@ -184,7 +186,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
               }`}
             >
               <PieChart className="w-5 h-5 inline mr-2" />
-              ?�계 분석
+              통계 분석
             </button>
           </div>
 
@@ -196,7 +198,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="?�생 ?�름 ?�는 ?�메?�로 검??.."
+                  placeholder="학생 이름 또는 이메일로 검색..."
                   className="w-full px-5 py-4 bg-white border-2 border-border rounded-full focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none transition-all shadow-soft"
                 />
               </div>
@@ -232,7 +234,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                         <div className="px-4 py-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200 min-w-[100px]">
                           <p className="text-xs text-blue-600 font-semibold mb-1 flex items-center gap-1">
                             <BarChart3 className="w-3 h-3" />
-                            ?�론 ?�수
+                            토론 횟수
                           </p>
                           <p className="text-2xl font-bold text-blue-700">{student.debatesCount}</p>
                         </div>
@@ -241,7 +243,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                         <div className={`px-4 py-2 rounded-2xl border-2 min-w-[100px] ${getScoreColor(student.averageScore)}`}>
                           <p className="text-xs font-semibold mb-1 flex items-center gap-1">
                             <Award className="w-3 h-3" />
-                            ?�균 ?�수
+                            평균 점수
                           </p>
                           <p className="text-2xl font-bold">{student.averageScore}</p>
                         </div>
@@ -261,8 +263,8 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                 {filteredStudents.length === 0 && (
                   <div className="text-center py-16 animate-fade-in-up">
                     <Users className="w-20 h-20 text-text-secondary mx-auto mb-4 opacity-50" />
-                    <h3 className="text-2xl font-bold text-text-primary mb-2">검??결과가 ?�습?�다</h3>
-                    <p className="text-text-secondary">텍스트</p>
+                    <h3 className="text-2xl font-bold text-text-primary mb-2">검색 결과가 없습니다</h3>
+                    <p className="text-text-secondary">다른 검색어를 시도해보세요</p>
                   </div>
                 )}
               </div>
@@ -290,7 +292,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-text-secondary mb-2">텍스트</label>
+                    <label className="block text-sm font-semibold text-text-secondary mb-2">입장</label>
                     <select
                       value={selectedPosition}
                       onChange={(e) => setSelectedPosition(e.target.value)}
@@ -302,7 +304,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-text-secondary mb-2">텍스트</label>
+                    <label className="block text-sm font-semibold text-text-secondary mb-2">내보내기</label>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleExport('pdf')}
@@ -329,7 +331,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                 <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 border border-border shadow-soft animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                   <h3 className="text-lg font-bold text-text-primary mb-6 flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-primary" />
-                    ?�르?�나 ?�택 빈도
+                    페르소나 선택 빈도
                   </h3>
                   <ResponsiveContainer width="100%" height={400}>
                     <BarChart data={dashboardData.characterStats} layout="vertical" margin={{ left: 20, right: 20 }}>
@@ -365,7 +367,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                 <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 border border-border shadow-soft animate-fade-in-up" style={{ animationDelay: '300ms' }}>
                   <h3 className="text-lg font-bold text-text-primary mb-6 flex items-center gap-2">
                     <PieChart className="w-5 h-5 text-primary" />
-                    ?�장 비율 (찬성 / 반�?)
+                    입장 비율 (찬성 / 반대)
                   </h3>
                   <ResponsiveContainer width="100%" height={400}>
                     <RechartsPieChart>
@@ -407,7 +409,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                 <div className="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-3xl p-6 border border-border shadow-soft animate-fade-in-up" style={{ animationDelay: '400ms' }}>
                   <h3 className="text-lg font-bold text-text-primary mb-6 flex items-center gap-2">
                     <Award className="w-5 h-5 text-primary" />
-                    ?�균 ?��? ?�수 (5??만점)
+                    평균 평가 점수 (5점 만점)
                   </h3>
                   <ResponsiveContainer width="100%" height={400}>
                     <RadarChart data={dashboardData.radarData}>
@@ -415,7 +417,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
                       <PolarAngleAxis dataKey="subject" stroke="#6b7280" style={{ fontSize: '14px', fontWeight: 600 }} />
                       <PolarRadiusAxis angle={90} domain={[0, 5]} stroke="#6b7280" />
                       <Radar 
-                        name="?�수" 
+                        name="점수" 
                         dataKey="score" 
                         stroke="#FF6B6B" 
                         fill="#FF6B6B" 
@@ -444,7 +446,7 @@ export default function DataDashboard({ onBack, demoMode = false }: DataDashboar
         <button
           onClick={() => handleExport('pdf')}
           className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-primary text-white rounded-full shadow-strong hover:shadow-glow transition-all flex items-center justify-center z-50 animate-bounce-slow"
-          title="리포???�운로드"
+          title="리포트 다운로드"
         >
           <Download className="w-7 h-7" />
         </button>

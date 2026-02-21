@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { projectId, publicAnonKey } from '/utils/supabase/info';
 
 // Ensure only one instance exists by checking if one already exists in window
 declare global {

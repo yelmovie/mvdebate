@@ -1,16 +1,13 @@
 // UI Components Library
-export { Button } from './Button';
-export type { ButtonVariant, ButtonSize } from './Button';
 
-export { Card, CardHeader, CardContent, CardFooter } from './Card';
-export type { CardVariant } from './Card';
+// shadcn/radix 기반 컴포넌트 (소문자 파일명)
+export { Button, buttonVariants } from './button';
+export { Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent } from './card';
+export { Input } from './input';
+export { Textarea } from './textarea';
+export { Badge, badgeVariants } from './badge';
 
-export { Input, Textarea } from './Input';
-export type { InputProps, TextareaProps } from './Input';
-
-export { Badge } from './Badge';
-export type { BadgeVariant, BadgeSize } from './Badge';
-
+// 커스텀 컴포넌트 (대문자 파일명)
 export { Modal, ModalHeader, ModalContent, ModalFooter } from './Modal';
 export type { ModalSize } from './Modal';
 

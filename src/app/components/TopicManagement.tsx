@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiCall } from '../../lib/api';
+import { apiCall } from '../../utils/supabase';
 import { 
   ArrowLeft, Plus, Search, Sparkles, Trash2, 
   Edit, RotateCcw, X, Check, Loader2, Tag, BookOpen
@@ -53,42 +53,42 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
         const mockTopics: Topic[] = [
           { 
             id: 'topic-1', 
-            title: '?�교?�서 ?�마?�폰 ?�용 ?�용', 
-            description: '?�생?�의 ?�교 ???�마?�폰 ?�용???�용?�야 ?�는가?',
+            title: '학교에서 스마트폰 사용 허용', 
+            description: '학생들의 학교 내 스마트폰 사용을 허용해야 하는가?',
             isAIGenerated: false,
-            tags: ['?�교', '기술'],
+            tags: ['학교', '기술'],
             createdAt: new Date().toISOString()
           },
           { 
             id: 'topic-2', 
-            title: '?좊줎 二쇱젣',
-            description: '?�교?�서 교복???�율?�해???�는가?',
+            title: '교복 자율화', 
+            description: '학교에서 교복을 자율화해야 하는가?',
             isAIGenerated: false,
-            tags: ['?�교', '?�유'],
+            tags: ['학교', '자유'],
             createdAt: new Date().toISOString()
           },
           { 
             id: 'topic-3', 
-            title: '?�라???�업???�과', 
-            description: '?�라???�업???�프?�인 ?�업보다 ?�과?�인가?',
+            title: '온라인 수업의 효과', 
+            description: '온라인 수업이 오프라인 수업보다 효과적인가?',
             isAIGenerated: true,
             tags: ['교육', '기술'],
             createdAt: new Date().toISOString()
           },
           { 
             id: 'topic-4', 
-            title: '?좊줎 二쇱젣',
-            description: '?�생?�에�?급식 메뉴�??�택??권리�?줘야 ?�는가?',
+            title: '급식 메뉴 선택권', 
+            description: '학생들에게 급식 메뉴를 선택할 권리를 줘야 하는가?',
             isAIGenerated: false,
-            tags: ['?�교', '?�권'],
+            tags: ['학교', '인권'],
             createdAt: new Date().toISOString()
           },
           { 
             id: 'topic-5', 
-            title: '?좊줎 二쇱젣',
-            description: '?�생?�에�??�제??반드???�요?��??',
+            title: '숙제의 필요성', 
+            description: '학생들에게 숙제는 반드시 필요한가?',
             isAIGenerated: true,
-            tags: ['교육', '?�습'],
+            tags: ['교육', '학습'],
             createdAt: new Date().toISOString()
           }
         ];
@@ -135,7 +135,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
           title: newTopicTitle,
           description: newTopicDescription,
           isAIGenerated: false,
-          tags: ['커스?�'],
+          tags: ['커스텀'],
           createdAt: new Date().toISOString()
         };
         setTopics([newTopic, ...topics]);
@@ -177,10 +177,10 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
         const aiTopics: Topic[] = [
           {
             id: `topic-ai-${Date.now()}`,
-            title: '?�경 보호�??�한 ?�회?�품 ?�용 금�?',
-            description: '?�경 보호�??�해 ?�교?�서 ?�회?�품 ?�용???�면 금�??�야 ?�는가?',
+            title: '환경 보호를 위한 일회용품 사용 금지',
+            description: '환경 보호를 위해 학교에서 일회용품 사용을 전면 금지해야 하는가?',
             isAIGenerated: true,
-            tags: ['?�경', '?�책'],
+            tags: ['환경', '정책'],
             createdAt: new Date().toISOString()
           }
         ];
@@ -270,7 +270,8 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
               className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
             >
               <ArrowLeft className="w-5 h-5" />
-              ?�아가�?            </button>
+              돌아가기
+            </button>
           </div>
         </div>
 
@@ -279,8 +280,9 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
           <div className="mb-8 animate-fade-in-up">
             <h1 className="text-4xl font-bold text-text-primary mb-3 flex items-center gap-3">
               <BookOpen className="w-10 h-10 text-primary" />
-              ?�론 주제 관�?            </h1>
-            <p className="text-text-secondary text-lg">텍스트</p>
+              토론 주제 관리
+            </h1>
+            <p className="text-text-secondary text-lg">학생들이 토론할 주제를 추가하고 관리하세요</p>
           </div>
 
           {/* Action Buttons */}
@@ -290,14 +292,14 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
               className="flex-1 sm:flex-none px-6 py-4 bg-gradient-accent text-white rounded-full font-bold shadow-medium hover:shadow-glow transition-all flex items-center justify-center gap-2 animate-pulse-subtle"
             >
               <Sparkles className="w-5 h-5 animate-spin-slow" />
-              AI가 ?�로??주제�?만들?�줘??
+              AI가 새로운 주제를 만들어줘요!
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
               className="flex-1 sm:flex-none px-6 py-4 bg-gradient-primary text-white rounded-full font-bold shadow-soft hover:shadow-medium transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              직접 주제 추�?
+              직접 주제 추가
             </button>
           </div>
 
@@ -310,7 +312,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="주제 검??.."
+                placeholder="주제 검색..."
                 className="w-full pl-14 pr-5 py-4 bg-white border-2 border-border rounded-full focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none transition-all shadow-soft text-text-primary placeholder:text-text-secondary"
               />
             </div>
@@ -325,7 +327,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
                     : 'bg-white text-text-secondary border-2 border-border hover:border-primary'
                 }`}
               >
-                ?�체 ({topics.length})
+                전체 ({topics.length})
               </button>
               <button
                 onClick={() => setFilter('mine')}
@@ -335,7 +337,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
                     : 'bg-white text-text-secondary border-2 border-border hover:border-secondary'
                 }`}
               >
-                ??주제 ({topics.filter(t => !t.isAIGenerated).length})
+                내 주제 ({topics.filter(t => !t.isAIGenerated).length})
               </button>
               <button
                 onClick={() => setFilter('ai')}
@@ -345,7 +347,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
                     : 'bg-white text-text-secondary border-2 border-border hover:border-accent'
                 }`}
               >
-                AI ?�성 ({topics.filter(t => t.isAIGenerated).length})
+                AI 생성 ({topics.filter(t => t.isAIGenerated).length})
               </button>
             </div>
           </div>
@@ -400,7 +402,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
                       className="flex-1 px-4 py-2 bg-gradient-primary text-white rounded-full text-sm font-semibold hover:shadow-glow transition-all flex items-center justify-center gap-2"
                     >
                       <Edit className="w-4 h-4" />
-                      ?�정
+                      수정
                     </button>
                     <button
                       onClick={() => initiateDelete(topic)}
@@ -415,9 +417,9 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
           ) : (
             <div className="text-center py-16 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
               <BookOpen className="w-20 h-20 text-text-secondary mx-auto mb-4 opacity-50" />
-              <h3 className="text-2xl font-bold text-text-primary mb-2">주제가 ?�습?�다</h3>
+              <h3 className="text-2xl font-bold text-text-primary mb-2">주제가 없습니다</h3>
               <p className="text-text-secondary mb-6">
-                {searchQuery ? '검??결과가 ?�습?�다' : '�??�론 주제�?추�??�보?�요'}
+                {searchQuery ? '검색 결과가 없습니다' : '첫 토론 주제를 추가해보세요'}
               </p>
             </div>
           )}
@@ -428,7 +430,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
       {deletedTopic && (
         <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in-up">
           <div className="bg-gray-900 text-white px-6 py-4 rounded-full shadow-strong flex items-center gap-4">
-            <span className="font-medium">주제가 삭제되었습니다.</span>
+            <span className="font-medium">주제가 삭제되었습니다</span>
             <button
               onClick={handleUndo}
               className="px-4 py-2 bg-white text-gray-900 rounded-full text-sm font-bold hover:bg-gray-100 transition-all flex items-center gap-2"
@@ -445,7 +447,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-strong animate-fade-in-up">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-text-primary">텍스트</h2>
+              <h2 className="text-2xl font-bold text-text-primary">새 주제 추가</h2>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="p-2 hover:bg-muted rounded-full transition-colors"
@@ -463,7 +465,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
                   type="text"
                   value={newTopicTitle}
                   onChange={(e) => setNewTopicTitle(e.target.value)}
-                  placeholder="?? ?�교?�서 ?�마?�폰 ?�용 ?�용"
+                  placeholder="예: 학교에서 스마트폰 사용 허용"
                   className="w-full px-5 py-4 border-2 border-border rounded-2xl focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none transition-all"
                   required
                 />
@@ -471,12 +473,12 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
 
               <div>
                 <label className="block text-sm font-semibold text-text-secondary mb-2">
-                  주제 ?�명
+                  주제 설명
                 </label>
                 <textarea
                   value={newTopicDescription}
                   onChange={(e) => setNewTopicDescription(e.target.value)}
-                  placeholder="?? ?�생?�의 ?�교 ???�마?�폰 ?�용???�용?�야 ?�는가?"
+                  placeholder="예: 학생들의 학교 내 스마트폰 사용을 허용해야 하는가?"
                   rows={4}
                   className="w-full px-5 py-4 border-2 border-border rounded-2xl focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none transition-all resize-none"
                   required
@@ -496,7 +498,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
                   disabled={loading}
                   className="flex-1 px-6 py-3 bg-gradient-primary text-white rounded-full font-semibold hover:shadow-glow transition-all disabled:opacity-50 shadow-soft"
                 >
-                  {loading ? '추�? �?..' : '추�??�기'}
+                  {loading ? '추가 중...' : '추가하기'}
                 </button>
               </div>
             </form>
@@ -513,7 +515,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
                 <div className="w-12 h-12 bg-gradient-accent rounded-full flex items-center justify-center">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-text-primary">AI 주제 ?�성</h2>
+                <h2 className="text-2xl font-bold text-text-primary">AI 주제 생성</h2>
               </div>
               <button
                 onClick={() => setShowAIModal(false)}
@@ -526,12 +528,12 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
             <form onSubmit={handleGenerateAITopic} className="space-y-6">
               <div>
                 <label className="block text-sm font-semibold text-text-secondary mb-2">
-                  ?�떤 주제�?만들까요?
+                  어떤 주제를 만들까요?
                 </label>
                 <textarea
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="?? ?�경 보호??관???�론 주제�?만들?�줘"
+                  placeholder="예: 환경 보호에 관한 토론 주제를 만들어줘"
                   rows={4}
                   className="w-full px-5 py-4 border-2 border-border rounded-2xl focus:border-accent focus:ring-4 focus:ring-accent/20 outline-none transition-all resize-none"
                   required
@@ -541,7 +543,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
               {isGenerating && (
                 <div className="flex items-center justify-center gap-3 py-4">
                   <Loader2 className="w-6 h-6 text-accent animate-spin" />
-                  <span className="text-text-secondary font-medium">AI가 ?�각 �?..</span>
+                  <span className="text-text-secondary font-medium">AI가 생각 중...</span>
                 </div>
               )}
 
@@ -560,7 +562,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
                   className="flex-1 px-6 py-3 bg-gradient-accent text-white rounded-full font-semibold hover:shadow-glow transition-all disabled:opacity-50 shadow-soft flex items-center justify-center gap-2"
                 >
                   <Sparkles className="w-5 h-5" />
-                  {isGenerating ? '?�성 �?..' : '?�성?�기'}
+                  {isGenerating ? '생성 중...' : '생성하기'}
                 </button>
               </div>
             </form>
@@ -576,9 +578,9 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-8 h-8 text-red-600" />
               </div>
-              <h2 className="text-2xl font-bold text-text-primary mb-2">주제 ??��</h2>
+              <h2 className="text-2xl font-bold text-text-primary mb-2">주제 삭제</h2>
               <p className="text-text-secondary">
-                ?�말 ??주제�???��?�시겠습?�까?
+                정말 이 주제를 삭제하시겠습니까?
               </p>
               <p className="text-sm font-bold text-text-primary mt-3">
                 "{topicToDelete.title}"
@@ -599,7 +601,7 @@ export default function TopicManagement({ onBack, classId, demoMode = false }: T
                 onClick={handleDeleteTopic}
                 className="flex-1 px-6 py-3 bg-red-500 text-white rounded-full font-semibold hover:bg-red-600 transition-all shadow-soft"
               >
-                ??��?�기
+                삭제하기
               </button>
             </div>
           </div>

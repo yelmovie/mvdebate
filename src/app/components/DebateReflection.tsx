@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { apiCall } from '../../lib/api';
+import { apiCall } from '../../utils/supabase';
 import { useAlert } from './AlertProvider';
 import { ArrowLeft, BookOpen, CheckCircle2, Lightbulb, Star, Sparkles } from 'lucide-react';
 
@@ -28,7 +28,7 @@ export default function DebateReflection({
     e.preventDefault();
     
     if (selfRating === 0) {
-      showAlert('?�기 ?��? 별점???�택?�주?�요!', 'warning');
+      showAlert('자기 평가 별점을 선택해주세요!', 'warning');
       return;
     }
     
@@ -72,10 +72,10 @@ export default function DebateReflection({
 
   const ratingLabels = [
     { stars: 1, label: '조금 부족해요', color: 'text-red-500' },
-    { stars: 2, label: '노력이 필요해요', color: 'text-orange-500' },
-    { stars: 3, label: '괴애요', color: 'text-yellow-500' },
+    { stars: 2, label: '더 노력할게요', color: 'text-orange-500' },
+    { stars: 3, label: '괜찮았어요', color: 'text-yellow-500' },
     { stars: 4, label: '잘했어요!', color: 'text-green-500' },
-    { stars: 5, label: '완벽해요!', color: 'text-primary' }
+    { stars: 5, label: '완벽해요! 🎉', color: 'text-primary' }
   ];
 
   return (
@@ -93,7 +93,7 @@ export default function DebateReflection({
               className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
             >
               <ArrowLeft className="w-5 h-5" />
-              건너?�기
+              건너뛰기
             </button>
           </div>
         </div>
@@ -103,10 +103,10 @@ export default function DebateReflection({
           <div className="mb-8 text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-secondary rounded-full mb-4 shadow-soft">
               <BookOpen className="w-5 h-5 text-white" />
-              <span className="text-sm font-bold text-white">5?�계</span>
+              <span className="text-sm font-bold text-white">5단계</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">텍스트</h1>
-            <p className="text-text-secondary text-lg">텍스트</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">스스로 정리하기</h1>
+            <p className="text-text-secondary text-lg">오늘 토론을 마치며 배운 점을 기록해보세요 📝</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -118,13 +118,13 @@ export default function DebateReflection({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-text-primary mb-1">오늘 내가 말한 핵심 주장은?</h3>
-                  <p className="text-sm text-text-secondary">토론에서 가장 중요하게 말했던 내용을 한 문장으로 적어주세요.</p>
+                  <p className="text-sm text-text-secondary">토론에서 가장 중요하게 말했던 내용을 한 문장으로 적어주세요</p>
                 </div>
               </div>
               <textarea
                 value={mainClaim}
                 onChange={(e) => setMainClaim(e.target.value)}
-                placeholder="?? ?�교?�서 ?�마?�폰???�용?�면 ?�습 ?�율???�아진다."
+                placeholder="예: 학교에서 스마트폰을 허용하면 학습 효율이 높아진다."
                 rows={3}
                 className="w-full px-5 py-4 border-2 border-border rounded-2xl focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none resize-none transition-all bg-white text-text-primary placeholder:text-text-secondary"
                 required
@@ -138,14 +138,14 @@ export default function DebateReflection({
                   <span className="text-white font-bold">2</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-text-primary mb-1">AI가 반박했던 내용 중 기억나는 것은?</h3>
-                  <p className="text-sm text-text-secondary">상대방의 의견에서 인상 깊었던 점을 적어주세요.</p>
+                  <h3 className="text-lg font-bold text-text-primary mb-1">AI가 반박한 내용 중 기억나는 것은?</h3>
+                  <p className="text-sm text-text-secondary">상대방의 의견에서 인상 깊었던 점을 적어주세요</p>
                 </div>
               </div>
               <textarea
                 value={aiCounterpoint}
                 onChange={(e) => setAiCounterpoint(e.target.value)}
-                placeholder="?? ?�마?�폰?�로 게임???�면 ?�업??집중?��? 못할 ???�다."
+                placeholder="예: 스마트폰으로 게임을 하면 수업에 집중하지 못할 수 있다."
                 rows={3}
                 className="w-full px-5 py-4 border-2 border-border rounded-2xl focus:border-secondary focus:ring-4 focus:ring-secondary/20 outline-none resize-none transition-all bg-white text-text-primary placeholder:text-text-secondary"
                 required
@@ -159,14 +159,14 @@ export default function DebateReflection({
                   <span className="text-white font-bold">3</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-text-primary mb-1">텍스트</h3>
-                  <p className="text-sm text-text-secondary">텍스트</p>
+                  <h3 className="text-lg font-bold text-text-primary mb-1">다음에 더 잘하고 싶은 점은?</h3>
+                  <p className="text-sm text-text-secondary">앞으로 개선하고 싶은 부분을 생각해보세요</p>
                 </div>
               </div>
               <textarea
                 value={improvement}
                 onChange={(e) => setImprovement(e.target.value)}
-                placeholder="?? 구체?�인 ?�계 ?�료�???많이 준비해?�겠??"
+                placeholder="예: 구체적인 통계 자료를 더 많이 준비해야겠다."
                 rows={3}
                 className="w-full px-5 py-4 border-2 border-border rounded-2xl focus:border-accent focus:ring-4 focus:ring-accent/20 outline-none resize-none transition-all bg-white text-text-primary placeholder:text-text-secondary"
                 required
@@ -180,8 +180,8 @@ export default function DebateReflection({
                   <Sparkles className="w-5 h-5 text-primary" />
                   <span className="text-sm font-bold text-text-primary">자기 평가</span>
                 </div>
-              <h3 className="text-2xl font-bold text-text-primary mb-2">오늘 토론은 몇 점이었나요?</h3>
-              <p className="text-text-secondary">별을 클릭해서 점수를 매겨보세요.</p>
+                <h3 className="text-2xl font-bold text-text-primary mb-2">오늘 토론은 몇 점이었나요?</h3>
+                <p className="text-text-secondary">별을 클릭해서 점수를 매겨보세요</p>
               </div>
 
               {/* Star Rating */}
@@ -230,10 +230,10 @@ export default function DebateReflection({
                   <Lightbulb className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-text-primary mb-2">잘했어요 팁</p>
+                  <p className="font-bold text-text-primary mb-2">💡 정리 팁</p>
                   <p className="text-sm text-text-secondary leading-relaxed">
-                    간단한 두 문장으로 핵심만 적어주세요. 이 내용은 나중에 복습할 때 큰 도움이 됩니다.
-                    솔직하게 적을수록 더 빨리 성장할 수 있어요.
+                    간단한 한 문장으로 핵심만 적어주세요. 이 내용은 나중에 복습할 때 도움이 됩니다.
+                    솔직하게 평가할수록 더 빨리 성장할 수 있어요!
                   </p>
                 </div>
               </div>
@@ -246,7 +246,7 @@ export default function DebateReflection({
                 onClick={onSkip}
                 className="px-6 py-4 bg-white border-2 border-border text-text-secondary rounded-full hover:bg-muted transition-all font-semibold shadow-soft"
               >
-                건너뛰기
+                나중에 하기
               </button>
               <button
                 type="submit"
@@ -256,12 +256,12 @@ export default function DebateReflection({
                 {loading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>텍스트</span>
+                    <span>저장 중...</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="w-5 h-5" />
-                    완료하고 결과 보기
+                    저장하고 결과 보기
                   </>
                 )}
               </button>

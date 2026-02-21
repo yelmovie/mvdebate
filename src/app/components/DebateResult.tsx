@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiCall } from '../../lib/api';
+import { apiCall } from '../../utils/supabase';
 import { ArrowLeft, Download, Loader2, Trophy, TrendingUp, 
   MessageSquare, Award, Sparkles, CheckCircle2, Star, Target
 } from 'lucide-react';
@@ -41,8 +41,8 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
     try {
       if (demoMode) {
         setDebate({
-          topicTitle: '?�교?�서 ?�마?�폰 ?�용 ?�용',
-          topicDescription: '?�생?�의 ?�교 ???�마?�폰 ?�용???�용?�야 ?�는가?',
+          topicTitle: '학교에서 스마트폰 사용 허용',
+          topicDescription: '학생들의 학교 내 스마트폰 사용을 허용해야 하는가?',
           position: 'for',
           character: 'tail_question_bora'
         });
@@ -50,15 +50,15 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
           participationScore: 90,
           logicScore: 85,
           evidenceScore: 82,
-          overallFeedback: '?�리?�인 근거�????�시?�습?�다! 반론???�???�?�도 ?�절?�어?? 구체?�인 ?�시�???많이 ?�용?�면 ?�욱 ?�득???�는 ?�론????거예?? ?��',
+          overallFeedback: '논리적인 근거를 잘 제시했습니다! 반론에 대한 대응도 적절했어요. 구체적인 예시를 더 많이 사용하면 더욱 설득력 있는 토론이 될 거예요. 🌟',
           strengths: [
-'?댁슜?낅땲??',
-'?댁슜?낅땲??',
-'?댁슜?낅땲??',
+            '주장이 명확하고 일관성이 있었어요',
+            '상대방 의견을 경청하고 존중하는 태도가 좋았어요',
+            '논리적 흐름이 자연스러웠어요'
           ],
           improvements: [
-'?댁슜?낅땲??',
-'?댁슜?낅땲??',
+            '구체적인 통계나 사례를 더 활용해보세요',
+            '상대방의 반론을 예상하여 미리 준비하면 더 좋아요'
           ]
         });
         setLoading(false);
@@ -77,7 +77,7 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
             method: 'POST',
             body: JSON.stringify({
               selfScore: 75,
-              selfFeedback: '?�론??참여?�습?�다.'
+              selfFeedback: '토론에 참여했습니다.'
             })
           });
           
@@ -105,14 +105,14 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
       participationScore: 75,
       logicScore: 75,
       evidenceScore: 75,
-      overallFeedback: '?�론??참여?�주?�서 감사?�니?? 계속 ?�습?�면 ?�욱 발전?????�어?? ?��',
+      overallFeedback: '토론에 참여해주셔서 감사합니다! 계속 연습하면 더욱 발전할 수 있어요. 🌟',
       strengths: [
-'?댁슜?낅땲??',
-'?댁슜?낅땲??',
+        '토론에 적극적으로 참여했어요',
+        '자신의 의견을 표현하려고 노력했어요'
       ],
       improvements: [
-'?댁슜?낅땲??',
-'?댁슜?낅땲??',
+        '더 많은 근거를 제시해보세요',
+        '상대방 의견에 대한 반론을 준비해보세요'
       ]
     };
   }
@@ -145,17 +145,17 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
           // Comprehensive color mapping from oklch/oklab approximations to RGB
           const colorMap: { [key: string]: string } = {
             // Primary colors (coral orange shades)
-            'oklch(0.7 0.15 35)': '#f97316',
-            'oklch(0.65 0.15 35)': '#ea580c',
+            'oklch(0.901 0.076 70.697)': '#FF8C69',
+            'oklch(0.553 0.195 38.402)': '#FF8C69',
             // Secondary colors (mint green shades)
-            'oklch(0.75 0.15 165)': '#10b981',
-            'oklch(0.70 0.15 165)': '#059669',
+            'oklch(0.925 0.084 155.995)': '#7DD3C0',
+            'oklch(0.723 0.219 149.579)': '#7DD3C0',
             // Accent colors (sunflower yellow shades)
-            'oklch(0.85 0.15 90)': '#eab308',
-            'oklch(0.80 0.15 90)': '#ca8a04',
+            'oklch(0.945 0.129 101.54)': '#FFD93D',
+            'oklch(0.554 0.135 66.442)': '#FFD93D',
             // Purple shades
-            'oklch(0.70 0.15 280)': '#8b5cf6',
-            'oklch(0.65 0.15 280)': '#7c3aed',
+            'oklch(0.882 0.059 254.128)': '#A78BFA',
+            'oklch(0.623 0.214 259.815)': '#A78BFA',
             // Background/transparent whites
             'oklab(0.999994 0.0000455677 0.0000200868 / 0.8)': 'rgba(255, 255, 255, 0.8)',
             'oklab(0.758371 0.117152 0.0905613 / 0.2)': 'rgba(255, 140, 105, 0.2)',
@@ -428,10 +428,10 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
         heightLeft -= pageHeight;
       }
       
-      pdf.save(`?�론결과_${debate?.topicTitle}_${new Date().toLocaleDateString()}.pdf`);
+      pdf.save(`토론결과_${debate?.topicTitle}_${new Date().toLocaleDateString()}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      showAlert('PDF ?�성 �??�류가 발생?�습?�다. ?�시 ?�도?�주?�요.');
+      showAlert('PDF 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setDownloading(false);
     }
@@ -448,7 +448,7 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-          <p className="text-text-secondary">결과�?불러?�는 �?..</p>
+          <p className="text-text-secondary">결과를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -491,7 +491,8 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
               className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
             >
               <ArrowLeft className="w-5 h-5" />
-              ?�아가�?            </button>
+              돌아가기
+            </button>
           </div>
         </div>
 
@@ -501,13 +502,13 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
             <div className="text-center mb-8 animate-fade-in-up">
               <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-accent rounded-full mb-6 shadow-medium animate-bounce-subtle">
                 <Trophy className="w-6 h-6 text-white" />
-                <span className="text-lg font-bold text-white">텍스트</span>
+                <span className="text-lg font-bold text-white">토론 완료!</span>
               </div>
               <h1 className="text-4xl sm:text-5xl font-bold text-text-primary mb-4">
-                ?�� ?�?�해?? ?��
+                🎉 대단해요! 🎉
               </h1>
               <p className="text-xl text-text-secondary">
-                {debate?.topicTitle} ?�론???�료?�습?�다
+                {debate?.topicTitle} 토론을 완료했습니다
               </p>
             </div>
 
@@ -523,7 +524,7 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
                   <div className={`text-5xl font-bold ${getScoreColor(evaluation.participationScore).text} mb-2`}>
                     {evaluation.participationScore}
                   </div>
-                  <p className="text-sm text-text-secondary">텍스트</p>
+                  <p className="text-sm text-text-secondary">적극적인 참여!</p>
                 </div>
               </div>
 
@@ -537,7 +538,7 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
                   <div className={`text-5xl font-bold ${getScoreColor(evaluation.logicScore).text} mb-2`}>
                     {evaluation.logicScore}
                   </div>
-                  <p className="text-sm text-text-secondary">텍스트</p>
+                  <p className="text-sm text-text-secondary">탄탄한 논리!</p>
                 </div>
               </div>
 
@@ -551,7 +552,7 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
                   <div className={`text-5xl font-bold ${getScoreColor(evaluation.evidenceScore).text} mb-2`}>
                     {evaluation.evidenceScore}
                   </div>
-                  <p className="text-sm text-text-secondary">충분한 근거 제시!</p>
+                  <p className="text-sm text-text-secondary">충분한 근거!</p>
                 </div>
               </div>
             </div>
@@ -614,17 +615,17 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
 
             {/* Next Challenge Banner */}
             <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10 rounded-3xl p-8 border-2 border-primary/20 text-center animate-fade-in-up" style={{ animationDelay: '700ms' }}>
-              <div className="text-5xl mb-4">텍스트</div>
-              <h3 className="text-2xl font-bold text-text-primary mb-2">텍스트</h3>
+              <div className="text-5xl mb-4">🚀</div>
+              <h3 className="text-2xl font-bold text-text-primary mb-2">다음 토론도 도전해볼까요?</h3>
               <p className="text-text-secondary mb-6">
-                계속 연습하면 토론 실력이 쑥쑥 늘 거예요.
+                계속 연습하면 토론 실력이 쑥쑥 자랄 거예요!
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                   onClick={onBack}
                   className="px-8 py-4 bg-gradient-primary text-white rounded-full font-bold shadow-medium hover:shadow-glow transition-all"
                 >
-                  ???�론 ?�작?�기
+                  새 토론 시작하기
                 </button>
                 <button
                   onClick={handleDownloadPDF}
@@ -634,12 +635,12 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
                   {downloading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>텍스트</span>
+                      <span>생성 중...</span>
                     </>
                   ) : (
                     <>
                       <Download className="w-5 h-5" />
-                      <span>결과 ?�운로드</span>
+                      <span>결과 다운로드</span>
                     </>
                   )}
                 </button>

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiCall } from '../../lib/api';
-import {
-  ArrowLeft, Download, Users, MessageSquare, Clock,
-  TrendingUp, Award, Medal, Trophy, Check, Sparkles, RotateCcw
+import { apiCall } from '../../utils/supabase';
+import { ArrowLeft, Download, Users, MessageSquare, Clock, 
+  TrendingUp, Award, Medal, Trophy, Check
 } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
@@ -21,11 +20,6 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
   const [showSuccess, setShowSuccess] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
-  // AI ?? ??
-  const [aiSummary, setAiSummary] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
-
   useEffect(() => {
     loadReportData();
   }, []);
@@ -37,102 +31,196 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
         totalSessions: 156,
         averageDebateTime: 12.5,
         positionRatio: [
-          { name: '??', value: 59, color: '#10b981' },
-          { name: '??', value: 41, color: '#f43f5e' },
+          { name: '찬성', value: 59, color: '#10b981' },
+          { name: '반대', value: 41, color: '#f43f5e' }
         ],
         topTopics: [
-          { rank: 1, title: '???? ???? ?? ??', count: 32 },
-          { rank: 2, title: '?? ???', count: 28 },
-          { rank: 3, title: '??? ??? ??', count: 24 },
+          { rank: 1, title: '학교에서 스마트폰 사용 허용', count: 32 },
+          { rank: 2, title: '교복 자율화', count: 28 },
+          { rank: 3, title: '온라인 수업의 효과', count: 24 }
         ],
-        averageScores: { logic: 4.2, evidence: 3.8, engagement: 4.5 },
-        summary: {
-          filterCondition: '?? ?? (2024??? 2??)',
-          mainAchievements:
-            '???? AI?? 1:1 ??? ?? ??? ???? ??? ?? ??? ?? ???????.',
-          participation:
-            '?? ??? 92%? ?? 2? ?? ??? ?????, ?? ?? ??? 12.5??????.',
+        averageScores: {
+          logic: 4.2,
+          evidence: 3.8,
+          engagement: 4.5
         },
+        summary: {
+          filterCondition: '전체 학급 (2024학년도 2학기)',
+          mainAchievements: '학생들이 AI와의 1:1 토론을 통해 논리적 사고력과 비판적 사고 능력을 크게 향상시켰습니다. 특히 근거 제시와 반론 대응 능력이 눈에 띄게 개선되었습니다.',
+          participation: '전체 학생의 92%가 최소 2회 이상 토론에 참여했으며, 평균 토론 길이는 12.5턴으로 활발한 토론이 이루어졌습니다.'
+        }
       });
       return;
     }
 
     try {
       const data = await apiCall('/teacher/report');
-      setReportData({
+      const safeData = {
         ...data,
         positionRatio: data.positionRatio || [
-          { name: '??', value: 50, color: '#22c55e' },
-          { name: '??', value: 50, color: '#ec4899' },
+          { name: '찬성', value: 50, color: '#22c55e' },
+          { name: '반대', value: 50, color: '#ec4899' }
         ],
         topTopics: data.topTopics || [],
-        averageScores: data.averageScores || { logic: 4.0, evidence: 4.0, engagement: 4.0 },
-        summary: data.summary || {
-          filterCondition: '?? ??',
-          mainAchievements: '???? ????.',
-          participation: '???? ????.',
+        topStudents: data.topStudents || [],
+        recentDebates: data.recentDebates || [],
+        statistics: data.statistics || {
+          totalStudents: 0,
+          totalDebates: 0,
+          averageScore: 0,
+          participationRate: 0,
+          averageTurns: 0
         },
-      });
+        averageScores: data.averageScores || {
+          logic: 4.0,
+          evidence: 4.0,
+          engagement: 4.0
+        },
+        summary: data.summary || {
+          filterCondition: '전체 학급',
+          mainAchievements: '데이터가 없습니다.',
+          participation: '데이터가 없습니다.'
+        }
+      };
+      setReportData(safeData);
     } catch (error) {
       console.error('Error loading report:', error);
       setReportData({
         positionRatio: [
-          { name: '??', value: 50, color: '#22c55e' },
-          { name: '??', value: 50, color: '#ec4899' },
+          { name: '찬성', value: 50, color: '#22c55e' },
+          { name: '반대', value: 50, color: '#ec4899' }
         ],
         topTopics: [],
-        averageScores: { logic: 4.0, evidence: 4.0, engagement: 4.0 },
-        summary: {
-          filterCondition: '?? ??',
-          mainAchievements: '???? ??? ? ????.',
-          participation: '???? ??? ? ????.',
+        topStudents: [],
+        recentDebates: [],
+        statistics: {
+          totalStudents: 0,
+          totalDebates: 0,
+          averageScore: 0,
+          participationRate: 0,
+          averageTurns: 0
         },
+        averageScores: {
+          logic: 4.0,
+          evidence: 4.0,
+          engagement: 4.0
+        },
+        summary: {
+          filterCondition: '전체 학급',
+          mainAchievements: '데이터를 불러올 수 없습니다.',
+          participation: '데이터를 불러올 수 없습니다.'
+        }
       });
     }
   }
 
-  // ?? AI ?? ????????????????????????????????????????????
-  async function handleAiSummary() {
-    if (!reportData) return;
-    setAiLoading(true);
-    setAiError('');
-    setAiSummary('');
-    try {
-      const res = await apiCall('/ai-summary', {
-        method: 'POST',
-        body: JSON.stringify({ reportData }),
-      });
-      setAiSummary(res.summary ?? '??? ?? ?????.');
-    } catch (err: any) {
-      const msg: string = err?.message ?? 'AI ?? ?? ? ??? ??????.';
-      if (msg.includes('??? ??')) {
-        setAiError('??? ??? ?????. OpenAI API Key? ??? ???? ?????.');
-      } else {
-        setAiError(msg);
-      }
-    } finally {
-      setAiLoading(false);
-    }
-  }
-
-  // ?? PDF ???? ????????????????????????????????????????
   async function handleDownloadPDF() {
     if (!reportRef.current) return;
     setDownloading(true);
+
     try {
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const element = reportRef.current;
-
-      const styleEl = document.createElement('style');
-      styleEl.textContent = `
-        [data-pdf-export] { background: #ffffff !important; }
-        [data-pdf-export] .text-white { color: #ffffff !important; }
-        [data-pdf-export] .bg-white { background-color: #ffffff !important; }
-        [data-pdf-export] .bg-gray-200 { background-color: #e5e7eb !important; }
+      
+      // Create a temporary style element to force all colors to safe RGB values
+      const styleElement = document.createElement('style');
+      styleElement.textContent = `
+        /* Force all elements in the report to use safe colors */
+        [data-pdf-export] * {
+          color: inherit !important;
+        }
+        [data-pdf-export] {
+          background: #ffffff !important;
+        }
+        [data-pdf-export] .bg-gradient-primary,
+        [data-pdf-export] .from-yellow-400,
+        [data-pdf-export] .to-yellow-600 {
+          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+        }
+        [data-pdf-export] .from-gray-300,
+        [data-pdf-export] .to-gray-500 {
+          background: linear-gradient(135deg, #d1d5db 0%, #6b7280 100%) !important;
+        }
+        [data-pdf-export] .from-orange-400,
+        [data-pdf-export] .to-orange-600 {
+          background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%) !important;
+        }
+        [data-pdf-export] .from-blue-400,
+        [data-pdf-export] .to-blue-600,
+        [data-pdf-export] .from-blue-50,
+        [data-pdf-export] .to-blue-100 {
+          background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%) !important;
+        }
+        [data-pdf-export] .from-purple-400,
+        [data-pdf-export] .to-purple-600,
+        [data-pdf-export] .from-purple-50,
+        [data-pdf-export] .to-purple-100 {
+          background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%) !important;
+        }
+        [data-pdf-export] .from-green-400,
+        [data-pdf-export] .to-green-600,
+        [data-pdf-export] .from-green-50,
+        [data-pdf-export] .to-green-100,
+        [data-pdf-export] .from-green-500 {
+          background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%) !important;
+        }
+        [data-pdf-export] .from-pink-50,
+        [data-pdf-export] .to-pink-100,
+        [data-pdf-export] .from-pink-400,
+        [data-pdf-export] .to-pink-500 {
+          background: linear-gradient(135deg, #f9a8d4 0%, #ec4899 100%) !important;
+        }
+        [data-pdf-export] .text-blue-700 {
+          color: #1d4ed8 !important;
+        }
+        [data-pdf-export] .text-purple-700 {
+          color: #7e22ce !important;
+        }
+        [data-pdf-export] .text-green-700,
+        [data-pdf-export] .text-green-600 {
+          color: #15803d !important;
+        }
+        [data-pdf-export] .text-pink-700,
+        [data-pdf-export] .text-pink-600 {
+          color: #db2777 !important;
+        }
+        [data-pdf-export] .text-yellow-500 {
+          color: #eab308 !important;
+        }
+        [data-pdf-export] .text-gray-400 {
+          color: #9ca3af !important;
+        }
+        [data-pdf-export] .text-orange-600 {
+          color: #ea580c !important;
+        }
+        [data-pdf-export] .text-white {
+          color: #ffffff !important;
+        }
+        [data-pdf-export] .border-blue-200 {
+          border-color: #bfdbfe !important;
+        }
+        [data-pdf-export] .border-purple-200 {
+          border-color: #e9d5ff !important;
+        }
+        [data-pdf-export] .border-green-200 {
+          border-color: #bbf7d0 !important;
+        }
+        [data-pdf-export] .border-pink-200 {
+          border-color: #fbcfe8 !important;
+        }
+        [data-pdf-export] .bg-gray-200 {
+          background-color: #e5e7eb !important;
+        }
+        [data-pdf-export] .bg-white {
+          background-color: #ffffff !important;
+        }
       `;
-      document.head.appendChild(styleEl);
+      document.head.appendChild(styleElement);
+      
+      // Mark the element for PDF export
       element.setAttribute('data-pdf-export', 'true');
-
+      
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -141,13 +229,23 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
         backgroundColor: '#ffffff',
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
+        ignoreElements: (el) => {
+          // Ignore any elements that might have problematic styles
+          return false;
+        }
       });
-
+      
+      // Clean up
       element.removeAttribute('data-pdf-export');
-      document.head.removeChild(styleEl);
+      document.head.removeChild(styleElement);
 
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
       const imgWidth = 210;
       const pageHeight = 297;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -156,6 +254,7 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
 
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
+
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
@@ -163,12 +262,13 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`AI?????_????_${new Date().toLocaleDateString()}.pdf`);
+      pdf.save(`AI와토론해요_운영결과_${new Date().toLocaleDateString()}.pdf`);
+      
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      showAlert('PDF ?? ? ??? ??????. ?? ??????.');
+      showAlert('PDF 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setDownloading(false);
     }
@@ -178,37 +278,36 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-text-secondary font-medium">텍스트</p>
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-text-secondary font-medium">리포트 불러오는 중...</p>
         </div>
       </div>
     );
   }
 
   const medalIcons = [
-    <Trophy className="w-6 h-6 text-yellow-500" key="gold" />,
-    <Medal className="w-6 h-6 text-gray-400" key="silver" />,
-    <Award className="w-6 h-6 text-orange-600" key="bronze" />,
+    <Trophy className="w-6 h-6 text-yellow-500" />,
+    <Medal className="w-6 h-6 text-gray-400" />,
+    <Award className="w-6 h-6 text-orange-600" />
   ];
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <div className="blob-bg absolute top-20 right-10 w-96 h-96 bg-primary" />
-      <div className="blob-bg absolute bottom-20 left-10 w-80 h-80 bg-accent" />
+      <div className="blob-bg absolute top-20 right-10 w-96 h-96 bg-primary"></div>
+      <div className="blob-bg absolute bottom-20 left-10 w-80 h-80 bg-accent"></div>
 
       {showSuccess && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up">
+        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in-up">
           <div className="bg-gradient-secondary text-white px-8 py-4 rounded-full shadow-strong flex items-center gap-3">
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
               <Check className="w-5 h-5 text-green-600" />
             </div>
-            <span className="font-bold text-lg">PDF ???? ??! ??</span>
+            <span className="font-bold text-lg">PDF 다운로드 완료! 🎉</span>
           </div>
         </div>
       )}
 
       <div className="relative z-10">
-        {/* ?? ????? */}
         <div className="bg-white/80 backdrop-blur-sm border-b border-border print:bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
             <button
@@ -216,7 +315,7 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
               className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors font-medium print:hidden"
             >
               <ArrowLeft className="w-5 h-5" />
-              버튼
+              돌아가기
             </button>
             <button
               onClick={handleDownloadPDF}
@@ -224,55 +323,71 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
               className="flex items-center gap-3 px-6 py-3 border-2 border-primary text-primary rounded-full hover:bg-gradient-primary hover:text-white hover:border-transparent transition-all font-semibold disabled:opacity-50 print:hidden"
             >
               <Download className="w-5 h-5" />
-              {downloading ? 'PDF ?? ?...' : 'PDF? ????'}
+              {downloading ? 'PDF 생성 중...' : 'PDF로 저장하기'}
             </button>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div ref={reportRef} className="bg-white rounded-3xl shadow-strong p-8 sm:p-12 print:shadow-none print:rounded-none">
-
-            {/* ?? */}
             <div className="text-center mb-12 print:mb-8">
               <div className="inline-block px-6 py-2 bg-gradient-primary text-white rounded-full text-sm font-semibold mb-4">
-                텍스트
+                운영 결과 리포트
               </div>
-              <h1 className="text-4xl sm:text-5xl font-bold text-text-primary mb-3">AI? ????! ??</h1>
+              <h1 className="text-4xl sm:text-5xl font-bold text-text-primary mb-3">
+                AI와 토론해요! 📊
+              </h1>
               <p className="text-text-secondary text-lg">
-                ???: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                생성일: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
 
-            {/* ?? ?? 4? */}
             <div className="grid grid-cols-4 gap-6 mb-12">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl p-6 border-2 border-blue-200 print:break-inside-avoid">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-soft mb-4">
-                  <Users className="w-6 h-6 text-white" />
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-soft">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
                 </div>
-                <p className="text-sm font-semibold text-blue-700 mb-2">텍스트</p>
-                <p className="text-4xl font-bold text-blue-700">{reportData.totalParticipants}회</p>
+                <p className="text-sm font-semibold text-blue-700 mb-2">총 참여 학생 수</p>
+                <p className="text-4xl font-bold text-blue-700">{reportData.totalParticipants}명</p>
               </div>
+
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-3xl p-6 border-2 border-purple-200 print:break-inside-avoid">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center shadow-soft mb-4">
-                  <MessageSquare className="w-6 h-6 text-white" />
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center shadow-soft">
+                    <MessageSquare className="w-6 h-6 text-white" />
+                  </div>
                 </div>
-                <p className="text-sm font-semibold text-purple-700 mb-2">텍스트</p>
+                <p className="text-sm font-semibold text-purple-700 mb-2">총 토론 세션 수</p>
                 <p className="text-4xl font-bold text-purple-700">{reportData.totalSessions}회</p>
               </div>
+
               <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-3xl p-6 border-2 border-green-200 print:break-inside-avoid">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center shadow-soft mb-4">
-                  <Clock className="w-6 h-6 text-white" />
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center shadow-soft">
+                    <Clock className="w-6 h-6 text-white" />
+                  </div>
                 </div>
-                <p className="text-sm font-semibold text-green-700 mb-2">텍스트</p>
-                <p className="text-4xl font-bold text-green-700">{reportData.averageDebateTime}</p>
+                <p className="text-sm font-semibold text-green-700 mb-2">평균 토론 길이</p>
+                <p className="text-4xl font-bold text-green-700">{reportData.averageDebateTime}턴</p>
               </div>
+
               <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-3xl p-6 border-2 border-pink-200 print:break-inside-avoid">
-                <p className="text-sm font-semibold text-pink-700 mb-4">텍스트</p>
+                <p className="text-sm font-semibold text-pink-700 mb-4">찬성 vs 반대 비율</p>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <ResponsiveContainer width="100%" height={80}>
                       <RechartsPieChart>
-                        <Pie data={reportData.positionRatio} cx="50%" cy="50%" innerRadius={20} outerRadius={35} paddingAngle={3} dataKey="value">
+                        <Pie
+                          data={reportData.positionRatio}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={20}
+                          outerRadius={35}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
                           {reportData.positionRatio.map((entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
@@ -281,35 +396,38 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
                     </ResponsiveContainer>
                   </div>
                   <div className="flex-1 text-right">
-                    <div className="text-2xl font-bold text-green-600 mb-1">{reportData.positionRatio[0].value}%</div>
-                    <div className="text-xs text-green-600 mb-2">텍스트</div>
-                    <div className="text-2xl font-bold text-pink-600 mb-1">{reportData.positionRatio[1].value}%</div>
-                    <div className="text-xs text-pink-600">텍스트</div>
+                    <div className="text-2xl font-bold text-green-600 mb-1">
+                      {reportData.positionRatio[0].value}%
+                    </div>
+                    <div className="text-xs text-green-600 mb-2">찬성</div>
+                    <div className="text-2xl font-bold text-pink-600 mb-1">
+                      {reportData.positionRatio[1].value}%
+                    </div>
+                    <div className="text-xs text-pink-600">반대</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ?? ?? ?? */}
             <div className="mb-12 print:break-inside-avoid">
               <h2 className="text-2xl font-bold text-text-primary mb-4 flex items-center gap-2">
                 <TrendingUp className="w-6 h-6 text-primary" />
-                텍스트
+                입장 비율 분석
               </h2>
               <div className="bg-white border-2 border-border rounded-3xl p-6">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-green-600">?? {reportData.positionRatio[0].value}%</span>
-                  <span className="text-sm font-semibold text-pink-600">?? {reportData.positionRatio[1].value}%</span>
+                  <span className="text-sm font-semibold text-green-600">찬성 {reportData.positionRatio[0].value}%</span>
+                  <span className="text-sm font-semibold text-pink-600">반대 {reportData.positionRatio[1].value}%</span>
                 </div>
                 <div className="flex w-full h-8 rounded-full overflow-hidden shadow-inner">
                   <div
-                    className="bg-gradient-to-r from-green-400 to-green-500 flex items-center justify-center text-white text-sm font-bold"
+                    className="bg-gradient-to-r from-green-400 to-green-500 flex items-center justify-center text-white text-sm font-bold transition-all"
                     style={{ width: `${reportData.positionRatio[0].value}%` }}
                   >
                     {reportData.positionRatio[0].value}%
                   </div>
                   <div
-                    className="bg-gradient-to-r from-pink-400 to-pink-500 flex items-center justify-center text-white text-sm font-bold"
+                    className="bg-gradient-to-r from-pink-400 to-pink-500 flex items-center justify-center text-white text-sm font-bold transition-all"
                     style={{ width: `${reportData.positionRatio[1].value}%` }}
                   >
                     {reportData.positionRatio[1].value}%
@@ -318,27 +436,35 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
               </div>
             </div>
 
-            {/* ?? ?? TOP 3 */}
             <div className="mb-12 print:break-inside-avoid">
               <h2 className="text-2xl font-bold text-text-primary mb-4 flex items-center gap-2">
                 <Trophy className="w-6 h-6 text-primary" />
-                ?? ?? TOP 3
+                인기 주제 TOP 3
               </h2>
               <div className="space-y-4">
                 {reportData.topTopics.map((topic: any, index: number) => (
-                  <div key={index} className="bg-white border-2 border-border rounded-3xl p-6 hover:border-primary transition-all">
+                  <div
+                    key={index}
+                    className="bg-white border-2 border-border rounded-3xl p-6 hover:border-primary transition-all"
+                  >
                     <div className="flex items-center gap-4">
-                      <div className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center shadow-soft ${
+                      <div className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center ${
                         index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
                         index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' :
                         'bg-gradient-to-br from-orange-400 to-orange-600'
-                      }`}>
+                      } shadow-soft`}>
                         {medalIcons[index]}
                       </div>
+                      
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold text-text-primary mb-1 truncate">{topic.title}</h3>
-                        <p className="text-sm text-text-secondary">{topic.count}? ??</p>
+                        <h3 className="text-lg font-bold text-text-primary mb-1 truncate">
+                          {topic.title}
+                        </h3>
+                        <p className="text-sm text-text-secondary">
+                          {topic.count}회 토론
+                        </p>
                       </div>
+
                       <div className="flex-shrink-0 px-4 py-2 bg-gradient-primary text-white rounded-full font-bold shadow-soft">
                         #{topic.rank}
                       </div>
@@ -348,155 +474,102 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
               </div>
             </div>
 
-            {/* ?? ?? ?? */}
             <div className="mb-12 print:break-inside-avoid">
               <h2 className="text-2xl font-bold text-text-primary mb-4 flex items-center gap-2">
                 <Award className="w-6 h-6 text-primary" />
-                텍스트
+                평균 평가 점수
               </h2>
               <div className="bg-white border-2 border-border rounded-3xl p-6">
                 <div className="space-y-4">
-                  {[
-                    { label: '?? ???', key: 'logic', color: 'bg-gradient-primary', textColor: 'text-primary' },
-                    { label: '?? ??', key: 'evidence', color: 'bg-gradient-secondary', textColor: 'text-secondary' },
-                    { label: '?? ???', key: 'engagement', color: 'bg-gradient-accent', textColor: 'text-accent' },
-                  ].map(({ label, key, color, textColor }) => (
-                    <div key={key}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-text-primary">{label}</span>
-                        <span className={`text-lg font-bold ${textColor}`}>{reportData.averageScores[key]} / 5</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div
-                          className={`${color} h-3 rounded-full transition-all`}
-                          style={{ width: `${(reportData.averageScores[key] / 5) * 100}%` }}
-                        />
-                      </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-text-primary">주장 명확성</span>
+                      <span className="text-lg font-bold text-primary">{reportData.averageScores.logic} / 5</span>
                     </div>
-                  ))}
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-gradient-primary h-3 rounded-full transition-all"
+                        style={{ width: `${(reportData.averageScores.logic / 5) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-text-primary">근거 사용</span>
+                      <span className="text-lg font-bold text-secondary">{reportData.averageScores.evidence} / 5</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-gradient-secondary h-3 rounded-full transition-all"
+                        style={{ width: `${(reportData.averageScores.evidence / 5) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-text-primary">주제 충실도</span>
+                      <span className="text-lg font-bold text-accent">{reportData.averageScores.engagement} / 5</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-gradient-accent h-3 rounded-full transition-all"
+                        style={{ width: `${(reportData.averageScores.engagement / 5) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* ?? ?? */}
             <div className="mb-12 print:break-inside-avoid">
-              <h2 className="text-2xl font-bold text-text-primary mb-4">텍스트</h2>
+              <h2 className="text-2xl font-bold text-text-primary mb-4">운영 요약</h2>
               <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-8 border-2 border-border">
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-sm font-bold text-text-secondary mb-2 uppercase">텍스트</h3>
+                    <h3 className="text-sm font-bold text-text-secondary mb-2 uppercase">필터 조건</h3>
                     <p className="text-base text-text-primary">{reportData.summary.filterCondition}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-text-secondary mb-2 uppercase">텍스트</h3>
+                    <h3 className="text-sm font-bold text-text-secondary mb-2 uppercase">주요 성과</h3>
                     <p className="text-base text-text-primary leading-relaxed">{reportData.summary.mainAchievements}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-text-secondary mb-2 uppercase">텍스트</h3>
+                    <h3 className="text-sm font-bold text-text-secondary mb-2 uppercase">참여도 분석</h3>
                     <p className="text-base text-text-primary leading-relaxed">{reportData.summary.participation}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* AI ?? ?? */}
-            <div className="mb-12 print:break-inside-avoid">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-                  <Sparkles className="w-6 h-6 text-primary" />
-                  AI ??
-                </h2>
-                <button
-                  onClick={handleAiSummary}
-                  disabled={aiLoading}
-                  className="print:hidden flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-all disabled:opacity-50 bg-gradient-primary text-white shadow-soft hover:shadow-glow"
-                >
-                  {aiLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ?? ?...
-                    </>
-                  ) : aiSummary ? (
-                    <>
-                      <RotateCcw className="w-4 h-4" />
-                      텍스트
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      AI ?? ??
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-3xl p-8 border-2 border-orange-100 min-h-[120px]">
-                {aiLoading && (
-                  <div className="flex items-center gap-3 text-text-secondary">
-                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span className="font-medium">AI? ?? ??? ???? ????...</span>
-                  </div>
-                )}
-                {aiError && !aiLoading && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-red-500 text-xs font-bold">!</span>
-                    </div>
-                    <div>
-                      <p className="text-red-600 font-semibold mb-1">텍스트</p>
-                      <p className="text-red-500 text-sm leading-relaxed break-keep">{aiError}</p>
-                      <button
-                        onClick={handleAiSummary}
-                        className="mt-3 flex items-center gap-1.5 text-sm text-primary font-semibold hover:underline"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                        버튼
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {aiSummary && !aiLoading && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-4 h-4 text-white" />
-                    </div>
-                    <p className="text-text-primary leading-relaxed whitespace-pre-wrap break-keep">{aiSummary}</p>
-                  </div>
-                )}
-                {!aiSummary && !aiLoading && !aiError && (
-                  <p className="text-text-secondary text-sm break-keep">
-                    ?? <span className="font-semibold text-primary">AI ?? ??</span> ??? ????
-                    ?? ???? ???? AI? ??? ???? ?????.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* ?? */}
             <div className="text-center pt-8 border-t-2 border-border">
-              <p className="text-sm font-semibold text-text-secondary mb-2">AI? ????! � ?? ?? ???</p>
+              <p className="text-sm font-semibold text-text-secondary mb-2">AI와 토론해요! · 운영 결과 리포트</p>
               <p className="text-xs text-text-secondary">
-                ? ???? {new Date().toLocaleDateString('ko-KR')}? ???????
+                본 리포트는 {new Date().toLocaleDateString('ko-KR')}에 생성되었습니다
               </p>
             </div>
           </div>
 
-          {/* ?? PDF ?? */}
           <div className="mt-8 text-center print:hidden">
             <button
               onClick={handleDownloadPDF}
               disabled={downloading}
               className={`inline-flex items-center gap-3 px-8 py-4 rounded-full font-bold text-lg transition-all shadow-medium hover:shadow-glow ${
-                downloading ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gradient-primary text-white animate-pulse-subtle'
+                downloading
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-primary text-white animate-pulse-subtle'
               }`}
             >
               <Download className="w-6 h-6" />
               {downloading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  PDF ?? ?...
+                  <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                  PDF 생성 중...
                 </>
-              ) : 'PDF? ????'}
+              ) : (
+                'PDF로 저장하기'
+              )}
             </button>
           </div>
         </div>
@@ -504,13 +577,27 @@ export default function ReportPreview({ onBack, demoMode = false }: ReportPrevie
 
       <style>{`
         @media print {
-          body { background: white !important; }
-          .print\\:hidden { display: none !important; }
-          .print\\:bg-white { background: white !important; }
-          .print\\:shadow-none { box-shadow: none !important; }
-          .print\\:rounded-none { border-radius: 0 !important; }
-          .print\\:break-inside-avoid { break-inside: avoid !important; }
-          .print\\:mb-8 { margin-bottom: 2rem !important; }
+          body {
+            background: white !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .print\\:bg-white {
+            background: white !important;
+          }
+          .print\\:shadow-none {
+            box-shadow: none !important;
+          }
+          .print\\:rounded-none {
+            border-radius: 0 !important;
+          }
+          .print\\:break-inside-avoid {
+            break-inside: avoid !important;
+          }
+          .print\\:mb-8 {
+            margin-bottom: 2rem !important;
+          }
         }
       `}</style>
     </div>

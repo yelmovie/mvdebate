@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { apiCall } from '../../lib/api';
+import { apiCall } from '../../utils/supabase';
 import { useAlert } from './AlertProvider';
 import { 
   ArrowLeft, Lightbulb, Plus, Trash2, Sparkles, CheckCircle2, Circle,
@@ -52,7 +52,7 @@ export default function DebatePreparation({
     // Generate topic-relevant examples based on current topic
     const topicTitle = debate?.topicTitle || '';
     const position = debate?.position || 'for';
-    const positionKorean = position === 'for' ? '찬성' : '반�?';
+    const positionKorean = position === 'for' ? '찬성' : '반대';
 
     // Try to use real API first (not in demo mode)
     if (!demoMode) {
@@ -60,12 +60,13 @@ export default function DebatePreparation({
         const prompt = `토론 주제: "${topicTitle}"
 입장: ${positionKorean}
 
-위 주제에 대해 ${positionKorean} 입장에서:
-1. 핵심 주장 1가지를 작성해주세요
-2. 주장을 뒷받침하는 근거 1가지를 작성해주세요
-3. 예상되는 반론 1가지를 작성해주세요
+위 주제에 대한 토론 준비를 도와주세요. 다음 세 가지를 모두 작성해주세요:
 
-다음 JSON 형식으로 답변해주세요:
+1. 주장 (Claim): ${positionKorean} 입장의 강력한 주장 1개를 한 문장으로 작성 (50자 이내)
+2. 근거 (Reason): 위 주장을 뒷받침하는 구체적인 근거 1개 ("~하기 때문이다" 형식, 70자 이내)
+3. 예상 반론 (Counter-argument): 상대방(${positionKorean === '찬성' ? '반대' : '찬성'}측)이 제기할 수 있는 예상 반론 1개 ("상대방은 ~라고 주장할 수 있다" 형식, 60자 이내)
+
+다음 JSON 형식으로 응답해주세요:
 {
   "claim": "주장 내용",
   "reason": "근거 내용",
@@ -125,13 +126,13 @@ export default function DebatePreparation({
       let counterExample = '';
       
       if (position === 'for') {
-        claimExample = `찬성: \${topicLower.includes('ai') ? 'AI는 인류에게 도움이 됩니다' : '이 주제에 찬성합니다'}`;
-        reasonExample = '왜냐하면 데이터와 연구 결과가 이를 뒷받침하기 때문입니다.';
-        counterExample = '반대 측에서는 부작용을 언급하지만, 이는 극복 가능합니다.';
+        claimExample = `${topicTitle}을(를) 통해 긍정적인 변화를 만들 수 있다`;
+        reasonExample = `실제로 많은 사례에서 효과가 입증되었기 때문이다`;
+        counterExample = `상대방은 실현 가능성이 낮다고 주장할 수 있다`;
       } else {
-        claimExample = `반대: \${topicLower.includes('ai') ? 'AI는 위험성이 있습니다' : '이 주제에 반대합니다'}`;
-        reasonExample = '왜냐하면 실제 사례를 보면 부작용이 더 크기 때문입니다.';
-        counterExample = '찬성 측의 주장은 이상적이지만 현실을 반영하지 못합니다.';
+        claimExample = `${topicTitle}은(는) 현실적으로 어려움이 많다`;
+        reasonExample = `실행 과정에서 예상치 못한 문제가 발생할 수 있기 때문이다`;
+        counterExample = `상대방은 장기적으로 긍정적 효과가 있다고 주장할 수 있다`;
       }
 
       setClaims([{ id: Date.now().toString(), content: claimExample }]);
@@ -147,7 +148,7 @@ export default function DebatePreparation({
     
     // Validate at least one item in each category
     if (claims.every(c => !c.content.trim())) {
-      showAlert('주장을 입력하세요.', 'warning');
+      showAlert('최소 하나의 주장을 입력해주세요', 'warning');
       return;
     }
     
@@ -204,12 +205,13 @@ export default function DebatePreparation({
                 className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
               >
                 <ArrowLeft className="w-5 h-5" />
-                ?�아가�?              </button>
+                돌아가기
+              </button>
 
               {/* Progress indicator */}
               <div className="flex items-center gap-3">
                 <span className="text-sm font-semibold text-text-primary">
-                  {sectionsCompleted}/{totalSections} ?�료!
+                  {sectionsCompleted}/{totalSections} 완료!
                 </span>
                 <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
                   <div 
@@ -230,10 +232,10 @@ export default function DebatePreparation({
               <div className="mb-8 text-center lg:text-left">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-primary rounded-full mb-4 shadow-soft">
                   <Lightbulb className="w-5 h-5 text-white" />
-                  <span className="text-sm font-bold text-white">3?�계</span>
+                  <span className="text-sm font-bold text-white">3단계</span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">주장�?근거 ?�리</h1>
-                <p className="text-text-secondary text-lg mb-4">텍스트</p>
+                <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mb-3">주장과 근거 정리</h1>
+                <p className="text-text-secondary text-lg mb-4">논리적인 토론을 위해 생각을 정리해보세요</p>
                 
                 {/* AI Help All Button */}
                 <button
@@ -243,7 +245,7 @@ export default function DebatePreparation({
                   className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-accent text-text-primary font-bold rounded-full hover:shadow-glow transition-all disabled:opacity-50 shadow-medium"
                 >
                   <Sparkles className={`w-5 h-5 ${aiGenerating ? 'animate-spin' : ''}`} />
-                  <span>{aiGenerating ? 'AI가 ?�각 �?..' : 'AI ?��?받기 (주장+근거+반론)'}</span>
+                  <span>{aiGenerating ? 'AI가 생각 중...' : 'AI 도움받기 (주장+근거+반론)'}</span>
                 </button>
               </div>
 
@@ -274,7 +276,7 @@ export default function DebatePreparation({
                             <HelpCircle className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-sm text-text-secondary mt-1">텍스트</p>
+                        <p className="text-sm text-text-secondary mt-1">내가 하고 싶은 말을 한 문장으로 적어보기</p>
                       </div>
                     </div>
                   </div>
@@ -285,9 +287,9 @@ export default function DebatePreparation({
                         <textarea
                           value={claim.content}
                           onChange={(e) => updateItem(setClaims, claim.id, e.target.value)}
-                          placeholder={debate?.position === 'for'
-                            ? '찬성 입장에서 주장을 입력하세요.'
-                            : '반대 입장에서 주장을 입력하세요.'}
+                          placeholder={debate?.position === 'for' 
+                            ? `예: ${debate?.topicTitle || '주제'}에 찬성하는 주장을 입력하세요` 
+                            : `예: ${debate?.topicTitle || '주제'}에 반대하는 주장을 입력하세요`}
                           rows={3}
                           className="flex-1 px-4 py-3 border-2 border-border rounded-2xl focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none resize-none transition-all bg-white"
                           required={index === 0}
@@ -309,7 +311,7 @@ export default function DebatePreparation({
                       className="w-full py-3 border-2 border-dashed border-border rounded-2xl text-text-secondary hover:border-primary hover:text-primary transition-all font-medium flex items-center justify-center gap-2"
                     >
                       <Plus className="w-5 h-5" />
-                          placeholder='내용을 입력하세요.'
+                      주장 추가하기
                     </button>
                   </div>
                 </div>
@@ -340,7 +342,7 @@ export default function DebatePreparation({
                             <HelpCircle className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-sm text-text-secondary mt-1">텍스트</p>
+                        <p className="text-sm text-text-secondary mt-1">왜 그렇게 생각하는지 이유를 적어보기</p>
                       </div>
                     </div>
                   </div>
@@ -351,7 +353,7 @@ export default function DebatePreparation({
                         <textarea
                           value={reason.content}
                           onChange={(e) => updateItem(setReasons, reason.id, e.target.value)}
-                          placeholder='이유와 근거를 입력하세요.'
+                          placeholder="예: 주장을 뒷받침하는 구체적인 이유를 ~하기 때문이다 형식으로 작성하세요"
                           rows={3}
                           className="flex-1 px-4 py-3 border-2 border-border rounded-2xl focus:border-secondary focus:ring-4 focus:ring-secondary/20 outline-none resize-none transition-all bg-white"
                         />
@@ -372,7 +374,7 @@ export default function DebatePreparation({
                       className="w-full py-3 border-2 border-dashed border-border rounded-2xl text-text-secondary hover:border-secondary hover:text-secondary transition-all font-medium flex items-center justify-center gap-2"
                     >
                       <Plus className="w-5 h-5" />
-                      이유 추가
+                      근거 추가하기
                     </button>
                   </div>
                 </div>
@@ -394,7 +396,7 @@ export default function DebatePreparation({
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="text-xl font-bold text-text-primary">반론</h3>
+                          <h3 className="text-xl font-bold text-text-primary">예상 반론</h3>
                           <button
                             type="button"
                             className="text-text-secondary hover:text-text-primary transition-colors"
@@ -403,7 +405,7 @@ export default function DebatePreparation({
                             <HelpCircle className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-sm text-text-secondary mt-1">상대방이 어떤 말을 할지 예상해보세요.</p>
+                        <p className="text-sm text-text-secondary mt-1">상대방이 어떤 말을 할지 예상해보기</p>
                       </div>
                     </div>
                   </div>
@@ -414,7 +416,7 @@ export default function DebatePreparation({
                         <textarea
                           value={counter.content}
                           onChange={(e) => updateItem(setCounterarguments, counter.id, e.target.value)}
-                          placeholder='상대방의 예상 주장을 입력하세요.'
+                          placeholder="예: 상대방은 ~라고 주장할 수 있다 형식으로 작성하세요"
                           rows={3}
                           className="flex-1 px-4 py-3 border-2 border-border rounded-2xl focus:border-accent focus:ring-4 focus:ring-accent/20 outline-none resize-none transition-all bg-white"
                         />
@@ -435,7 +437,7 @@ export default function DebatePreparation({
                       className="w-full py-3 border-2 border-dashed border-border rounded-2xl text-text-secondary hover:border-accent hover:text-accent transition-all font-medium flex items-center justify-center gap-2"
                     >
                       <Plus className="w-5 h-5" />
-                      반론을 입력하세요.
+                      예상 반론 추가하기
                     </button>
                   </div>
                 </div>
@@ -464,19 +466,19 @@ export default function DebatePreparation({
                     <div className="px-6 pb-6 space-y-3">
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
-                        <p className="text-text-secondary">주장은 간단하고 명확하게 한 문장으로 작성하세요.</p>
+                        <p className="text-text-secondary">주장은 간단하고 명확하게 한 문장으로 작성하세요</p>
                       </div>
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
-                        <p className="text-text-secondary">근거는 구체적인 사례나 통계를 포함하면 더 설득력이 생겨요.</p>
+                        <p className="text-text-secondary">근거는 구체적인 사례나 통계를 포함하면 더 설득력이 있어요</p>
                       </div>
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
-                        <p className="text-text-secondary">상대방의 입장에서 생각해보고 예상 반론도 미리 준비할 수 있어요.</p>
+                        <p className="text-text-secondary">상대방의 입장에서 생각해보면 예상 반론을 잘 준비할 수 있어요</p>
                       </div>
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
-                        <p className="text-text-secondary">상단의 AI 도움받기 버튼을 누르면 주장, 근거, 예상 반론을 한번에 자동 생성할 수 있어요.</p>
+                        <p className="text-text-secondary">상단의 'AI 도움받기' 버튼을 누르면 주장, 근거, 예상 반론을 한번에 자동 생성할 수 있어요</p>
                       </div>
                     </div>
                   )}
@@ -490,7 +492,7 @@ export default function DebatePreparation({
                 <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-medium border border-border">
                   <div className="flex items-center gap-2 mb-4">
                     <Target className="w-5 h-5 text-primary" />
-                    <h3 className="font-bold text-text-primary">텍스트</h3>
+                    <h3 className="font-bold text-text-primary">실시간 미리보기</h3>
                   </div>
 
                   {/* Topic Card */}
@@ -501,7 +503,7 @@ export default function DebatePreparation({
                           ? 'bg-gradient-secondary text-white' 
                           : 'bg-gradient-primary text-white'
                       }`}>
-                        {debate?.position === 'for' ? '찬성 ?�장' : '반�? ?�장'}
+                        {debate?.position === 'for' ? '찬성 입장' : '반대 입장'}
                       </span>
                     </div>
                     <h4 className="font-bold text-text-primary text-lg mb-1">{debate?.topicTitle}</h4>
@@ -549,7 +551,7 @@ export default function DebatePreparation({
                       <div className="bg-accent/5 rounded-2xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Shield className="w-4 h-4 text-accent" />
-                          <span className="text-sm font-bold text-text-primary">텍스트</span>
+                          <span className="text-sm font-bold text-text-primary">예상 반론</span>
                         </div>
                         <ul className="space-y-2">
                           {counterarguments.filter(c => c.content.trim()).map((counter, idx) => (
@@ -563,8 +565,8 @@ export default function DebatePreparation({
 
                     {sectionsCompleted === 0 && (
                       <div className="text-center py-8">
-                        <div className="text-4xl mb-2">✏️</div>
-                        <p className="text-sm text-text-secondary">입력한 내용이<br />여기에 표시됩니다.</p>
+                        <div className="text-4xl mb-2">✍️</div>
+                        <p className="text-sm text-text-secondary">입력한 내용이<br />여기에 표시됩니다</p>
                       </div>
                     )}
                   </div>
@@ -586,12 +588,12 @@ export default function DebatePreparation({
             {loading ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>준�?�?..</span>
+                <span>준비 중...</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-6 h-6" />
-                <span>텍스트</span>
+                <span>토론 시작하기</span>
               </>
             )}
           </button>
