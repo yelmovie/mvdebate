@@ -700,7 +700,23 @@ export default function StudentDashboard({ user, onLogout, demoMode = false, the
                           <h4 className="font-semibold text-sm text-text-primary line-clamp-2">{debate.topicTitle}</h4>
                         </div>
                         <p className="text-xs text-text-secondary mb-3">입장: {debate.position === 'for' ? '찬성' : '반대'}</p>
-                        <button className="w-full py-2 bg-gradient-primary text-white font-semibold text-sm rounded-full hover:shadow-glow transition-all">
+                        <button
+                          onClick={async () => {
+                            setCurrentDebateId(debate.id);
+                            if (demoMode) {
+                              setCurrentDebate(debate);
+                            } else {
+                              try {
+                                const data = await apiCall(`/debates/${debate.id}`);
+                                setCurrentDebate(data.debate);
+                              } catch {
+                                setCurrentDebate(debate);
+                              }
+                            }
+                            setViewMode('chat');
+                          }}
+                          className="w-full py-2 bg-gradient-primary text-white font-semibold text-sm rounded-full hover:shadow-glow transition-all"
+                        >
                           계속하기
                         </button>
                       </div>

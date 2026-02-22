@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   ArrowLeft, HelpCircle, Book, MessageCircle, 
   Send, ChevronDown, ChevronUp, Mail, Phone,
@@ -42,6 +42,8 @@ export default function HelpSupport({ onBack, demoMode = false }: HelpSupportPro
     category: 'general'
   });
   const [loading, setLoading] = useState(false);
+  const [helpfulClicked, setHelpfulClicked] = useState<Set<string>>(new Set());
+  const [helpfulCounts, setHelpfulCounts] = useState<Record<string, number>>({});
 
   const faqCategories = [
     { id: 'all', name: '전체', icon: HelpCircle },
@@ -439,9 +441,17 @@ export default function HelpSupport({ onBack, demoMode = false }: HelpSupportPro
                             <div className="pl-8 pt-2 border-t-2 border-border">
                               <p className="text-text-secondary mb-4">{faq.answer}</p>
                               <div className="flex items-center gap-4">
-                                <button className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-semibold">
+                                <button
+                                  onClick={() => {
+                                    if (helpfulClicked.has(faq.id)) return;
+                                    setHelpfulClicked(prev => new Set([...prev, faq.id]));
+                                    setHelpfulCounts(prev => ({ ...prev, [faq.id]: (prev[faq.id] ?? faq.helpful) + 1 }));
+                                  }}
+                                  className={`flex items-center gap-2 text-sm font-semibold transition-colors ${helpfulClicked.has(faq.id) ? 'text-green-600 cursor-default' : 'text-primary hover:text-primary/80 cursor-pointer'}`}
+                                >
                                   <CheckCircle className="w-4 h-4" />
-                                  도움이 되었어요 ({faq.helpful})
+                                  {helpfulClicked.has(faq.id) ? '감사합니다! ' : '도움이 되었어요 '}
+                                  ({helpfulCounts[faq.id] ?? faq.helpful})
                                 </button>
                               </div>
                             </div>
@@ -614,13 +624,25 @@ export default function HelpSupport({ onBack, demoMode = false }: HelpSupportPro
                   </div>
 
                   <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-3xl p-6 border-2 border-green-200 shadow-soft">
-                    <h3 className="font-bold text-green-900 mb-3">✨ 빠른 응답을 원하시나요?</h3>
+                    <h3 className="font-bold text-green-900 mb-3">✨ 빠른 문의를 원하시나요?</h3>
                     <p className="text-sm text-green-800 mb-4">
-                      실시간 채팅 상담을 이용하시면 즉시 답변을 받으실 수 있습니다.
+                      문의하기 탭에서 직접 메시지를 보내거나, 이메일로 바로 연락하세요.
                     </p>
-                    <button className="w-full px-4 py-3 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors font-semibold">
-                      실시간 채팅 시작하기
-                    </button>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => setActiveTab('contact')}
+                        className="w-full px-4 py-3 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors font-semibold"
+                      >
+                        문의하기로 이동
+                      </button>
+                      <a
+                        href="mailto:support@mvdebate.app"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-green-600 text-green-700 rounded-full hover:bg-green-50 transition-colors font-semibold text-sm"
+                      >
+                        <Mail className="w-4 h-4" />
+                        support@mvdebate.app
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>

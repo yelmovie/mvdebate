@@ -191,22 +191,12 @@ export default function TeacherDashboard({ user, onLogout, demoMode = false, the
 
   async function handleAddStudent(e: React.FormEvent) {
     e.preventDefault();
-    console.log('handleAddStudent called', { selectedClass, studentName, demoMode });
-    
-    if (!selectedClass) {
-      showAlert('학급을 선택해주세요.');
-      return;
-    }
-    
-    if (!studentName.trim()) {
-      showAlert('학생 이름을 입력해주세요.');
-      return;
-    }
-    
+    if (!selectedClass) { showAlert('학급을 선택해주세요.'); return; }
+    if (!studentName.trim()) { showAlert('학생 이름을 입력해주세요.'); return; }
+
     setLoading(true);
     try {
       if (demoMode) {
-        console.log('Demo mode: adding student', studentName);
         const sanitizedName = studentName.replace(/\s/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const newStudent = {
           id: `student-${Date.now()}`,
@@ -222,20 +212,16 @@ export default function TeacherDashboard({ user, onLogout, demoMode = false, the
         showAlert('학생이 성공적으로 추가되었습니다.', 'success');
         return;
       }
-      
-      console.log('API mode: adding student', studentName);
+
       const data = await apiCall(`/classes/${selectedClass.id}/students`, {
         method: 'POST',
         body: JSON.stringify({ name: studentName }),
       });
-
-      console.log('Student added successfully:', data);
       setStudents([...students, data.student]);
       setShowAddStudent(false);
       setStudentName('');
       showAlert('학생이 성공적으로 추가되었습니다.', 'success');
     } catch (error: any) {
-      console.error('Add student error:', error);
       showAlert(error.message || '학생 추가 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);

@@ -47,17 +47,10 @@ export default function App() {
 
   async function initializeApp() {
     try {
-      // Initialize test data first
-      console.log('Initializing test data...');
-      await publicApiCall('/init-test-data', {
-        method: 'POST'
-      });
-      console.log('Test data initialized successfully');
-    } catch (error) {
-      console.log('Test data init error (non-critical):', error);
+      await publicApiCall('/init-test-data', { method: 'POST' });
+    } catch {
+      // non-critical, ignore
     }
-    
-    // Then check session
     await checkSession();
   }
 
@@ -72,45 +65,21 @@ export default function App() {
 
   async function checkSession() {
     try {
-      console.log('Checking session...');
       const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Session check error:', error);
+      if (error || !session?.user) {
         setUser(null);
-        setLoading(false);
         return;
       }
-      
-      console.log('Session status:', {
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        userId: session?.user?.id,
-        email: session?.user?.email
-      });
-      
-      if (session?.user) {
-        try {
-          // Get user data from backend
-          console.log('Fetching user data from /me...');
-          const userData = await apiCall('/me');
-          console.log('User data received:', userData);
-          setUser(userData.user);
-        } catch (apiError: any) {
-          console.error('Failed to fetch user data:', apiError);
-          // If API call fails, sign out to force re-login
-          if (apiError.message?.includes('인증')) {
-            console.log('Authentication error, clearing session');
-            await supabase.auth.signOut();
-            setUser(null);
-          }
+      try {
+        const userData = await apiCall('/me');
+        setUser(userData.user);
+      } catch (apiError: any) {
+        if (apiError.message?.includes('인증')) {
+          await supabase.auth.signOut();
+          setUser(null);
         }
-      } else {
-        console.log('No session found, user needs to login');
-        setUser(null);
       }
-    } catch (error) {
-      console.error('Session check error:', error);
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -133,8 +102,13 @@ export default function App() {
   }
 
   function handleSwitchRole(role: 'teacher' | 'student') {
-    setShowRoleSelector(false);
-    // Show login page
+    // 현재 사용자가 있으면 해당 역할로 전환 가능 여부 확인
+    if (user && user.role === role) return;
+    // 로그아웃 후 로그인 화면으로 이동 (역할 전환)
+    supabase.auth.signOut().finally(() => {
+      setUser(null);
+      setShowRoleSelector(false);
+    });
   }
 
   function handleResetPasswordComplete() {
@@ -234,7 +208,7 @@ export default function App() {
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-0">
             {/* Teacher Section */}
             <button
-              onClick={() => setShowRoleSelector(false)}
+              onClick={() => handleSwitchRole('teacher')}
               className="group relative flex flex-col items-center justify-center p-8 lg:p-12 transition-all duration-700 hover:scale-105"
             >
               <div className="relative z-10 text-center max-w-lg">
@@ -301,7 +275,7 @@ export default function App() {
 
             {/* Student Section */}
             <button
-              onClick={() => setShowRoleSelector(false)}
+              onClick={() => handleSwitchRole('student')}
               className="group relative flex flex-col items-center justify-center p-8 lg:p-12 transition-all duration-700 hover:scale-105"
             >
               <div className="relative z-10 text-center max-w-lg">
