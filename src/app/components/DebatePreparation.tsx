@@ -73,8 +73,6 @@ export default function DebatePreparation({
   "counterargument": "예상 반론 내용"
 }`;
 
-        console.log('Calling AI help API for all sections:', { topic: topicTitle, position });
-        
         const response = await apiCall('/ai/generate-help', {
           method: 'POST',
           body: JSON.stringify({
@@ -84,8 +82,6 @@ export default function DebatePreparation({
             position
           })
         });
-
-        console.log('AI help response:', response);
 
         if (response.suggestion) {
           try {
@@ -105,14 +101,12 @@ export default function DebatePreparation({
             }
             setAiGenerating(null);
             return;
-          } catch (parseError) {
-            console.warn('Failed to parse JSON response, using as single claim:', parseError);
+          } catch {
             // If not valid JSON, use as claim only
             setClaims([{ id: Date.now().toString(), content: response.suggestion }]);
           }
         }
-      } catch (apiError) {
-        console.warn('API call failed, using fallback examples:', apiError);
+      } catch {
         // Continue to fallback logic below
       }
     }

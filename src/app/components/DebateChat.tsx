@@ -172,8 +172,8 @@ export default function DebateChat({ debateId, debate, onComplete, onCancel, dem
         };
         setMessages([greeting]);
       }
-    } catch (error) {
-      console.error('Error loading debate:', error);
+    } catch {
+      // ignore load error
     }
   }
 
@@ -226,8 +226,6 @@ export default function DebateChat({ debateId, debate, onComplete, onCancel, dem
         body: JSON.stringify({ message: userMessage }),
       });
 
-      console.log('Chat API response:', data);
-
       // Get updated messages
       const debateData = await apiCall(`/debates/${debateId}`);
       setMessages(debateData.messages);
@@ -244,7 +242,6 @@ export default function DebateChat({ debateId, debate, onComplete, onCancel, dem
         }, 3000);
       }
     } catch (error: any) {
-      console.error('Chat error:', error);
       showAlert(error.message || '메시지 전송에 실패했습니다. 다시 시도해주세요.', 'error');
       
       // Remove the failed user message on error

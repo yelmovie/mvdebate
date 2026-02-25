@@ -1183,69 +1183,88 @@ app.post("/make-server-7273e82a/debates/:debateId/evaluate", async (c) => {
     const studentMessages = messages.filter((m: any) => m.role === 'student');
     const messageCount = studentMessages.length;
 
-    // Build conversation history for AI analysis
-    let conversationText = '';
-    conversationText += `[토론 주제]\n${debate.topicTitle}\n${debate.topicDescription}\n\n`;
-    conversationText += `[학생 입장]\n${debate.position === 'for' ? '찬성' : '반대'}\n\n`;
-    conversationText += `[사전 준비]\n`;
-    conversationText += `주장: ${preparation.claim || '없음'}\n`;
-    conversationText += `근거: ${preparation.evidence || '없음'}\n`;
-    conversationText += `예상 반론: ${preparation.counterarguments || '없음'}\n`;
-    conversationText += `반론 대응: ${preparation.responses || '없음'}\n\n`;
-    conversationText += `[토론 대화 내용]\n`;
-    
-    messages.forEach((msg: any, idx: number) => {
-      const speaker = msg.role === 'student' ? '학생' : 'AI';
-      conversationText += `${speaker}: ${msg.content}\n`;
-    });
+    // chat_log: 배열 { speaker: "user"|"ai", text: string } (평가자는 대화 로그에만 기반)
+    const chatLog = messages.map((m: any) => ({
+      speaker: m.role === 'student' ? 'user' : 'ai',
+      text: (m.content || '').trim()
+    }));
 
-    // Call OpenAI API for detailed evaluation
-    let detailedEvaluation;
+    const debateTopic = debate.topicTitle || debate.topic || '';
+
+    // Fallback: 유효 발언 수·품질 기반 점수 (대화 로그만 사용, 절대 규칙 적용)
+    const WEAK_PATTERNS = /^(네|응|예|아니요|몰라요|음+\.?|그냥요|ㅋㅋ|ㅎㅎ|글쎄|모르겠어요|잘\s*모르겠어요|\.\.\.|ㅇㅇ|ㄴㄴ)$/i;
+    const isWeakUtterance = (t: string) => {
+      if (!t || t.length <= 2) return true;
+      const cleaned = t.replace(/\s/g, '');
+      if (cleaned.length <= 2) return true;
+      return WEAK_PATTERNS.test(t.trim());
+    };
+    const userTexts = chatLog.filter((m: any) => m.speaker === 'user').map((m: any) => m.text);
+    const validUtteranceCount = userTexts.filter((t: string) => {
+      if (isWeakUtterance(t)) return false;
+      const hasClaim = /(그래서|때문에|그래서|즉|즉,|나는|저는|~라고\s*생각|~해야\s*한다|반대|찬성)/.test(t) || t.length >= 30;
+      const hasReason = /(왜냐하면|이유는|예를\s*들면|경험에|사실|통계|연구|조사|규칙|법|규정)/.test(t) || t.split(/[.!?]/).filter((s: string) => s.trim().length > 15).length >= 2;
+      const hasExample = /(예를\s*들면|예시|사례|경험|실제로|예를)/.test(t);
+      const hasRebuttal = /(하지만|그런데|반대로|그렇지만|그\s*의견은|질문|물어보)/.test(t);
+      return hasClaim || hasReason || hasExample || hasRebuttal;
+    }).length;
+    const totalSentences = userTexts.reduce((n: number, t: string) => n + (t.match(/[.!?]/g) || []).length, 0);
+    const capTotalWhenPoor = totalSentences <= 2 || validUtteranceCount === 0 ? 30 : 100;
+
+    let detailedEvaluation: {
+      participationScore: number;
+      logicScore: number;
+      evidenceScore: number;
+      overallFeedback: string;
+      strengths: string[];
+      improvements: string[];
+      evidence_snippets?: Array<{ type: string; quote: string; reason: string }>;
+      confidence?: string;
+    };
+
     try {
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-      if (!openaiApiKey) {
-        console.error('OPENAI_API_KEY not found in environment variables');
-        throw new Error('OPENAI_API_KEY not configured');
-      }
+      if (!openaiApiKey) throw new Error('OPENAI_API_KEY not configured');
 
-      const evaluationPrompt = `당신은 학생 토론을 공정하게 평가하는 교육 전문가입니다. 다음 토론 내용을 면밀히 분석하여 정직한 평가를 제공해주세요.
+      const chatLogJson = JSON.stringify(chatLog, null, 0);
+      const evaluationPrompt = `당신은 "토론 평가자"입니다. 반드시 대화 로그(chat_log)에 기반해서만 점수와 총평을 작성하세요. 추측·과장·격려용 미사여구 금지. 사용자 발언이 빈약하면 점수는 낮아야 하며, 근거 없는 고득점은 오류입니다.
 
-${conversationText}
+입력:
+- debate_topic: "${debateTopic}"
+- chat_log: ${chatLogJson}
 
-[평가 기준 - 반드시 실제 대화 내용을 기반으로 평가하세요]
+절대 규칙 (하드 룰):
+1. 대화 로그에 존재하지 않는 내용은 쓰지 마라.
+2. 점수/총평의 모든 판단은 evidence_snippets의 quote로 정당화되어야 한다.
+3. 사용자 발언이 2문장 이하이거나, 내용어(주장/이유/예시)가 없으면 총점(participation+logic+evidence 평균) 30점 이상 주지 마라.
+4. "네", "몰라요", "음…", "그냥요", "ㅋㅋ", 단답은 참여도에 거의 기여하지 않으며 논리/근거는 0~20점 범위로 반영한다.
 
-참여도 (0-100):
-- 90점 이상: 5회 이상 발언, 각 발언이 2문장 이상, 상대 의견에 직접 반응
-- 70-89점: 3-4회 발언, 의견 표현 시도
-- 50-69점: 1-2회 발언 또는 짧은 응답만
-- 49점 이하: 의미없는 단답, 주제 무관한 발언, 참여 거부
+1) 유효 발언만 평가: (a) 주장 (b) 이유/근거 (c) 예시 (d) 상대 주장에 대한 반박/질문 (e) 논점 정리 중 하나라도 포함. 감탄/추임새/단답/주제무관/반복은 무효·약발언으로 감점.
 
-논리력 (0-100):
-- 90점 이상: 주장-근거-예시 구조 명확, 반론에 논리적 대응
-- 70-89점: 주장은 있으나 근거가 약함
-- 50-69점: 주장만 있고 근거 없음
-- 49점 이하: 주제와 무관한 발언, 논리 없음
+2) 점수 기준 (각 0~100):
+- 참여도(participation): "발화 수"가 아니라 유효 발언 수 + 상호작용(질문/응답/반박). 유효 발언 0개면 0~10점.
+- 논리력(logic): 주장→이유→연결이 있으면 가점. 연결 없거나 비약/주제무관이면 0~20점.
+- 근거력(evidence): 예시/사실/경험/규칙/자료 언급이 있으면 가점. 근거 전혀 없으면 0~20점.
 
-근거력 (0-100):
-- 90점 이상: 구체적 사례, 통계, 전문가 의견 등 인용
-- 70-89점: 일반적 경험이나 상식 수준의 근거
-- 50-69점: 막연한 주장만
-- 49점 이하: 근거 없음 또는 엉뚱한 내용
+3) 총평(overall_comment): 칭찬이 아니라 사실 보고서. 반드시 포함: (1) 사용자가 실제로 한 핵심 발언 요약 1~2줄, (2) 부족한 점(대화 로그 근거), (3) 다음 토론에서 할 1~2개 행동 지침(구체 문장 예시 포함).
 
-총평: 실제 토론 내용을 언급하며 현실적인 피드백을 작성하세요. 잘했으면 칭찬, 부족하면 솔직하게 말하되 격려도 포함하세요.
-
-잘한 점: 실제 대화에서 구체적인 발언을 인용하여 작성하세요. 잘한 점이 없으면 "토론에 참여하려는 의지를 보여줬어요" 정도만 작성하세요.
-개선할 점: 실제 문제점을 구체적으로 지적해주세요.
-
-JSON 형식으로만 응답해주세요:
+4) 출력 JSON만 반환 (다른 텍스트 없이):
 {
-  "participationScore": 점수,
-  "logicScore": 점수,
-  "evidenceScore": 점수,
-  "overallFeedback": "총평 (2-3문장, 실제 토론 내용 반영)",
-  "strengths": ["잘한 점 1", "잘한 점 2", "잘한 점 3"],
-  "improvements": ["개선할 점 1", "개선할 점 2"]
-}`;
+  "scores": {
+    "participation": number,
+    "logic": number,
+    "evidence": number
+  },
+  "overall_comment": "string",
+  "strengths": ["string"],
+  "improvements": ["string"],
+  "evidence_snippets": [
+    {"type": "valid|weak|offtopic", "quote": "사용자 발언 원문(짧게)", "reason": "판단 이유"}
+  ],
+  "confidence": "high|medium|low"
+}
+
+confidence: 유효 발언 0~1개면 low, 2~3개면 medium, 4개 이상·논점 유지면 high.`;
 
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -1255,95 +1274,77 @@ JSON 형식으로만 응답해주세요:
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'user',
-              content: evaluationPrompt
-            }
-          ],
-          temperature: 0.7
+          messages: [{ role: 'user', content: evaluationPrompt }],
+          temperature: 0.3
         })
       });
 
       if (!openaiResponse.ok) {
-        const errorText = await openaiResponse.text();
-        console.error('OpenAI API error:', openaiResponse.status, errorText);
-        throw new Error(`OpenAI API returned ${openaiResponse.status}`);
+        const errText = await openaiResponse.text();
+        throw new Error(`OpenAI API ${openaiResponse.status}: ${errText.slice(0, 200)}`);
       }
 
       const openaiData = await openaiResponse.json();
-      const aiResponse = openaiData.choices[0].message.content;
-      
-      console.log('AI Evaluation Response:', aiResponse);
+      const aiResponse = openaiData.choices[0].message?.content || '';
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON in AI response');
 
-      // Parse JSON response
-      try {
-        // Extract JSON from response (handle cases where AI adds extra text)
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          detailedEvaluation = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('No JSON found in AI response');
-        }
-      } catch (parseError) {
-        console.error('Failed to parse AI response:', aiResponse);
-        throw parseError;
+      const parsed = JSON.parse(jsonMatch[0]);
+      const scores = parsed.scores || {};
+      let part = Math.min(100, Math.max(0, Number(scores.participation) ?? 0));
+      let logic = Math.min(100, Math.max(0, Number(scores.logic) ?? 0));
+      let ev = Math.min(100, Math.max(0, Number(scores.evidence) ?? 0));
+      const avg = (part + logic + ev) / 3;
+      if (capTotalWhenPoor === 30 && avg > 30) {
+        const scale = 30 / avg;
+        part = Math.round(part * scale);
+        logic = Math.round(logic * scale);
+        ev = Math.round(ev * scale);
       }
-
-    } catch (aiError) {
-      console.error('AI evaluation error:', aiError);
-      // Fallback to simple evaluation
-      let baseScore = 50;
-      
-      // Score based on message count
-      if (messageCount >= 10) baseScore += 20;
-      else if (messageCount >= 7) baseScore += 15;
-      else if (messageCount >= 5) baseScore += 10;
-      else if (messageCount >= 3) baseScore += 5;
-
-      // Score based on message quality
-      const avgLength = studentMessages.reduce((sum: number, m: any) => sum + m.content.length, 0) / (messageCount || 1);
-      if (avgLength > 100) baseScore += 15;
-      else if (avgLength > 50) baseScore += 10;
-      else if (avgLength > 20) baseScore += 5;
-
-      // Score based on preparation
-      if (preparation.claim && preparation.evidence) baseScore += 10;
-      if (preparation.counterarguments && preparation.responses) baseScore += 5;
-
-      baseScore = Math.min(100, Math.max(0, baseScore));
-
-      // 실제 발언 품질 분석
-      const hasSubstantiveContent = avgLength > 30 && messageCount >= 3;
-
-      const feedbackMsg = baseScore >= 80
-        ? `총 ${messageCount}개의 발언으로 적극적으로 참여했습니다. 논리적인 주장을 펼치려고 노력한 모습이 인상적이에요. 더 구체적인 근거를 추가하면 훨씬 설득력 있는 토론이 될 거예요!`
-        : baseScore >= 60
-        ? `총 ${messageCount}개의 발언으로 토론에 참여했습니다. 의견을 표현하려는 시도는 좋았지만, 주장을 뒷받침할 근거가 조금 부족했어요. 다음에는 구체적인 예시나 사례를 준비해보세요.`
-        : baseScore >= 40
-        ? `총 ${messageCount}개의 발언이 있었지만, 토론 주제에 맞는 체계적인 주장이 부족했습니다. 토론 전에 자신의 입장과 근거를 미리 정리하면 훨씬 나은 토론을 할 수 있어요.`
-        : `토론 참여가 매우 미흡했습니다. 의미 있는 주장이나 근거 없이 토론을 마쳤어요. 다음에는 토론 주제를 충분히 생각하고 자신의 입장을 논리적으로 설명해보세요.`;
-
       detailedEvaluation = {
-        participationScore: baseScore,
-        logicScore: Math.max(0, hasSubstantiveContent ? baseScore - 5 : Math.min(baseScore, 35)),
-        evidenceScore: Math.max(0, hasSubstantiveContent ? baseScore - 8 : Math.min(baseScore, 30)),
-        overallFeedback: feedbackMsg,
-        strengths: hasSubstantiveContent ? [
-          '토론에 여러 차례 발언하며 참여 의지를 보여줬어요',
-          '상대방의 의견을 들으며 토론 흐름을 이어갔어요',
-          messageCount >= 5 ? '지속적으로 발언하며 토론을 이어갔어요' : '토론에 참여하려는 노력을 보여줬어요'
-        ] : [
-          '토론에 참여하려는 의지를 보여줬어요'
-        ],
-        improvements: hasSubstantiveContent ? [
-          '주장을 뒷받침할 구체적인 근거(사례, 통계, 경험)를 준비해보세요',
-          '상대방의 주장에 대해 직접적으로 반론을 제기해보세요'
-        ] : [
-          '토론 전 자신의 주장과 근거를 미리 정리해보세요',
-          '단순한 동의나 짧은 응답보다 논리적인 주장을 펼쳐보세요',
-          '토론 주제에 집중하여 관련 내용으로만 발언해보세요'
-        ]
+        participationScore: part,
+        logicScore: logic,
+        evidenceScore: ev,
+        overallFeedback: typeof parsed.overall_comment === 'string' ? parsed.overall_comment : (parsed.overallFeedback || ''),
+        strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
+        improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
+        evidence_snippets: Array.isArray(parsed.evidence_snippets) ? parsed.evidence_snippets : [],
+        confidence: parsed.confidence || 'medium'
+      };
+    } catch (aiError) {
+      // Fallback: 대화 로그만 사용, 절대 규칙 적용
+      let participationScore = validUtteranceCount === 0 ? Math.min(10, messageCount * 3) : Math.min(100, 15 + validUtteranceCount * 15 + (messageCount > 3 ? 10 : 0));
+      let logicScore = validUtteranceCount === 0 ? Math.min(20, participationScore) : Math.min(100, 25 + validUtteranceCount * 15);
+      let evidenceScore = validUtteranceCount === 0 ? Math.min(20, participationScore) : Math.min(100, 20 + validUtteranceCount * 12);
+      if (capTotalWhenPoor === 30) {
+        const sum = participationScore + logicScore + evidenceScore;
+        if (sum > 90) {
+          const scale = 90 / sum;
+          participationScore = Math.round(participationScore * scale);
+          logicScore = Math.round(logicScore * scale);
+          evidenceScore = Math.round(evidenceScore * scale);
+        }
+      }
+      const snippets: Array<{ type: string; quote: string; reason: string }> = userTexts.slice(0, 5).map((t: string) => ({
+        type: isWeakUtterance(t) ? 'weak' : 'valid',
+        quote: t.slice(0, 80),
+        reason: isWeakUtterance(t) ? '단답/추임새로 유효 발언 아님' : '유효 발언으로 판단'
+      }));
+      detailedEvaluation = {
+        participationScore: Math.max(0, Math.min(100, participationScore)),
+        logicScore: Math.max(0, Math.min(100, logicScore)),
+        evidenceScore: Math.max(0, Math.min(100, evidenceScore)),
+        overallFeedback: validUtteranceCount === 0
+          ? `대화 로그상 사용자 유효 발언이 없어 낮게 평가했습니다. 실제 발언: "${(userTexts[0] || '없음').slice(0, 50)}…". 다음에는 주장·이유·예시 중 하나라도 포함해 발언해보세요.`
+          : totalSentences <= 2
+          ? `발언이 2문장 이하로 적어 총점 상한을 적용했습니다. 다음에는 "주장 + 이유"를 한 문장이라도 구체적으로 말해보세요. 예: "저는 반대입니다. 왜냐하면 …"`
+          : `유효 발언 ${validUtteranceCount}개 기준으로 평가했습니다. evidence_snippets 없이 고득점하지 않았습니다.`,
+        strengths: validUtteranceCount > 0 ? ['대화 로그에 유효 발언이 일부 포함됨'] : [],
+        improvements: validUtteranceCount === 0
+          ? ['주장·이유·예시 중 하나를 포함한 문장으로 발언하기', '단답("네","몰라요") 대신 구체적 이유 한 문장 말하기']
+          : ['주장→이유→연결을 한 문장이라도 명확히 하기', '예시/사실/경험 한 가지를 인용하기'],
+        evidence_snippets: snippets,
+        confidence: validUtteranceCount <= 1 ? 'low' : validUtteranceCount <= 3 ? 'medium' : 'high'
       };
     }
 
@@ -1357,6 +1358,8 @@ JSON 형식으로만 응답해주세요:
       overallFeedback: detailedEvaluation.overallFeedback,
       strengths: detailedEvaluation.strengths,
       improvements: detailedEvaluation.improvements,
+      evidence_snippets: detailedEvaluation.evidence_snippets,
+      confidence: detailedEvaluation.confidence,
       messageCount,
       createdAt: new Date().toISOString()
     };

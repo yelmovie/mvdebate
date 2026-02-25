@@ -69,9 +69,7 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
       
       // If evaluation doesn't exist, create it automatically
       if (!data.evaluation) {
-        console.log('No evaluation found, generating one automatically...');
         try {
-          // Call evaluate endpoint to generate evaluation
           await apiCall(`/debates/${debateId}/evaluate`, {
             method: 'POST',
             body: JSON.stringify({
@@ -79,20 +77,15 @@ export default function DebateResult({ debateId, onBack, demoMode = false }: Deb
               selfFeedback: '토론에 참여했습니다.'
             })
           });
-          
-          // Reload debate data to get the evaluation
           const updatedData = await apiCall(`/debates/${debateId}`);
           setEvaluation(updatedData.evaluation || getDefaultEvaluation());
-        } catch (evalError) {
-          console.warn('Failed to generate evaluation, using default:', evalError);
+        } catch {
           setEvaluation(getDefaultEvaluation());
         }
       } else {
         setEvaluation(data.evaluation);
       }
-    } catch (error) {
-      console.error('Error loading debate:', error);
-      // Set fallback evaluation on error
+    } catch {
       setEvaluation(getDefaultEvaluation());
     } finally {
       setLoading(false);

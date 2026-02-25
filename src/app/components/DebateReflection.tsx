@@ -53,17 +53,13 @@ export default function DebateReflection({
             selfRating
           }),
         });
-        console.log('Reflection saved successfully');
       } catch (apiError) {
         // Log error but don't block user from proceeding
-        console.warn('Failed to save reflection, but allowing user to continue:', apiError);
       }
 
       // Always proceed to next step regardless of save status
       onComplete();
-    } catch (error: any) {
-      console.error('Reflection error:', error);
-      // Still allow user to proceed
+    } catch {
       onComplete();
     } finally {
       setLoading(false);
